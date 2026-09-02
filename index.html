@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>capes_mtg — Cape Skins</title>
+<style>
+    :root {
+        --bg: #14161c;
+        --panel: #1e2129;
+        --accent: #7c5cff;
+        --text: #eaeaf0;
+        --muted: #9a9aab;
+        --ok: #4ade80;
+        --err: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        justify-content: center;
+        padding: 2.5rem 1rem;
+    }
+    main { width: 100%; max-width: 640px; }
+    h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+    h2 { font-size: 1.1rem; margin: 2rem 0 0.75rem; }
+    p.sub { color: var(--muted); margin-top: 0; margin-bottom: 2rem; font-size: 0.9rem; }
+    .panel { background: var(--panel); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.4rem; margin-top: 1rem; }
+    label:first-child { margin-top: 0; }
+    input[type="text"], input[type="email"], input[type="password"], select {
+        width: 100%;
+        padding: 0.6rem 0.7rem;
+        border-radius: 8px;
+        border: 1px solid #333;
+        background: #10121a;
+        color: var(--text);
+        font-size: 0.95rem;
+    }
+    #drop {
+        border: 2px dashed #333;
+        border-radius: 10px;
+        padding: 1.5rem;
+        text-align: center;
+        color: var(--muted);
+        cursor: pointer;
+        margin-top: 0.4rem;
+        transition: border-color 0.15s;
+    }
+    #drop.dragover { border-color: var(--accent); color: var(--text); }
+    #preview { max-width: 100%; max-height: 140px; image-rendering: pixelated; margin-top: 0.75rem; display: none; }
+    button {
+        width: 100%;
+        margin-top: 1.5rem;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 8px;
+        background: var(--accent);
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    button.secondary { background: transparent; color: var(--muted); margin-top: 0.5rem; font-weight: 400; font-size: 0.85rem; text-decoration: underline; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #status, #authStatus { margin-top: 1rem; font-size: 0.9rem; text-align: center; display: none; }
+    .ok { color: var(--ok); }
+    .err { color: var(--err); }
+    .hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; }
+    .userbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 1rem;
+    }
+    .userbar b { color: var(--text); }
+    .userbar button { width: auto; margin: 0; padding: 0.35rem 0.7rem; font-size: 0.8rem; background: #2a2d38; }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .tabs button {
+        flex: 1;
+        margin: 0;
+        background: #2a2d38;
+        color: var(--muted);
+        font-weight: 500;
+        padding: 0.5rem;
+    }
+    .tabs button.active { background: var(--accent); color: white; }
+    .hidden { display: none !important; }
+
+    /* Gallery */
+    #gallery {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 0.75rem;
+    }
+    .cape-card {
+        background: var(--panel);
+        border-radius: 10px;
+        padding: 0.6rem;
+        text-align: center;
+    }
+    .cape-card img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: contain;
+        image-rendering: pixelated;
+        background: #10121a;
+        border-radius: 6px;
+    }
+    .cape-card .cape-name { font-size: 0.78rem; margin-top: 0.4rem; }
+    .cape-card .cape-section { font-size: 0.7rem; color: var(--muted); }
+    #galleryEmpty { color: var(--muted); font-size: 0.9rem; }
+    #uploadPromptBtn { margin-top: 0; }
+</style>
+</head>
+<body>
+<main>
+    <h1>🧣 capes_mtg</h1>
+    <p class="sub">Cape skins for Luanti. Browse below — no account needed. To upload your own, you'll need a free account.</p>
+
+    <!-- ============ PUBLIC GALLERY (no login needed) ============ -->
+    <h2>Browse capes</h2>
+    <button id="uploadCta" style="margin-top:0;margin-bottom:1rem;">Upload a cape</button>
+    <div class="tabs" id="sectionTabs">
+        <button data-section="all" class="active">All</button>
+        <button data-section="aesthetic">Aesthetic</button>
+        <button data-section="meme">Meme</button>
+        <button data-section="other">Other</button>
+    </div>
+    <div id="gallery"></div>
+    <p id="galleryEmpty" class="hidden">No capes approved yet — be the first to upload one!</p>
+
+    <h2 id="uploadSection">Upload a cape</h2>
+
+    <!-- ============ NOT LOGGED IN ============ -->
+    <div class="panel" id="authPanel">
+        <div class="tabs">
+            <button id="tabLogin" class="active">I have an account</button>
+            <button id="tabRegister">Sign up</button>
+        </div>
+
+        <!-- Login -->
+        <div id="loginForm">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" placeholder="you@gmail.com">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword">
+            <button id="loginBtn">Log in</button>
+        </div>
+
+        <!-- Register -->
+        <div id="registerForm" class="hidden">
+            <label for="regUsername">Username</label>
+            <input type="text" id="regUsername" placeholder="e.g. sushi7270" maxlength="20">
+            <label for="regEmail">Email (Gmail or any other)</label>
+            <input type="email" id="regEmail" placeholder="you@gmail.com">
+            <label for="regPassword">Password</label>
+            <input type="password" id="regPassword" placeholder="At least 6 characters">
+            <button id="registerBtn">Create account</button>
+            <p class="hint">You'll get a confirmation email before you can log in (unless the admin disabled that).</p>
+        </div>
+
+        <div id="authStatus"></div>
+    </div>
+
+    <!-- ============ LOGGED IN ============ -->
+    <div id="uploadPanel" class="hidden">
+        <div class="userbar">
+            <span>Logged in as <b id="usernameLabel"></b></span>
+            <button id="logoutBtn">Log out</button>
+        </div>
+
+        <div class="panel">
+            <label for="name">Cape name</label>
+            <input type="text" id="name" placeholder="e.g. Dragon Cape" maxlength="60">
+
+            <label for="section">Section</label>
+            <select id="section">
+                <option value="aesthetic">Aesthetic</option>
+                <option value="meme">Meme</option>
+                <option value="other">Other</option>
+            </select>
+
+            <label for="file">Image (PNG, square recommended, max 512x512)</label>
+            <div id="drop">Drag your PNG here or click to choose</div>
+            <input type="file" id="file" accept="image/png" style="display:none">
+            <img id="preview" alt="preview">
+            <p class="hint">A transparent-background PNG, as it would look in-game, is recommended.</p>
+
+            <button id="submitBtn" disabled>Submit for review</button>
+            <div id="status"></div>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const SUPABASE_URL = "https://ctryxzztvariziownhbt.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_x0_2CnxyGI2LrccmDhJqHQ_9sjQK350";
+    const BUCKET = "cape-textures";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function publicTextureUrl(path) {
+        return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+    }
+
+    // ---------- Gallery (public, no login) ----------
+    let allCapes = [];
+    let currentSectionFilter = "all";
+
+    function renderGallery() {
+        const galleryEl = document.getElementById("gallery");
+        const emptyEl = document.getElementById("galleryEmpty");
+
+        const filtered = currentSectionFilter === "all"
+            ? allCapes
+            : allCapes.filter(c => c.section === currentSectionFilter);
+
+        if (filtered.length === 0) {
+            galleryEl.innerHTML = "";
+            emptyEl.classList.remove("hidden");
+            return;
+        }
+        emptyEl.classList.add("hidden");
+
+        galleryEl.innerHTML = filtered.map(cape => `
+            <div class="cape-card">
+                <img src="${publicTextureUrl(cape.texture_path)}" alt="${cape.name}">
+                <div class="cape-name">${cape.name}</div>
+                <div class="cape-section">${cape.section}</div>
+            </div>
+        `).join("");
+    }
+
+    async function loadGallery() {
+        const { data, error } = await supabase
+            .from("capes")
+            .select("id,name,section,texture_path")
+            .eq("status", "approved")
+            .order("submitted_at", { ascending: false });
+
+        if (error) {
+            console.error(error);
+            return;
+        }
+
+        allCapes = data || [];
+        renderGallery();
+    }
+
+    document.querySelectorAll("#sectionTabs button").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll("#sectionTabs button").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentSectionFilter = btn.dataset.section;
+            renderGallery();
+        });
+    });
+
+    document.getElementById("uploadCta").addEventListener("click", () => {
+        document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
+    });
+
+    loadGallery();
+
+    // ---------- Elements ----------
+    const authPanel = document.getElementById("authPanel");
+    const uploadPanel = document.getElementById("uploadPanel");
+    const usernameLabel = document.getElementById("usernameLabel");
+
+    const tabLogin = document.getElementById("tabLogin");
+    const tabRegister = document.getElementById("tabRegister");
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+    const authStatus = document.getElementById("authStatus");
+
+    const dropEl = document.getElementById("drop");
+    const fileInput = document.getElementById("file");
+    const previewEl = document.getElementById("preview");
+    const nameEl = document.getElementById("name");
+    const sectionEl = document.getElementById("section");
+    const submitBtn = document.getElementById("submitBtn");
+    const statusEl = document.getElementById("status");
+
+    let selectedFile = null;
+
+    function setMsg(el, msg, kind) {
+        el.textContent = msg;
+        el.className = kind || "";
+        el.style.display = msg ? "block" : "none";
+    }
+
+    // ---------- Login/register tabs ----------
+    tabLogin.addEventListener("click", () => {
+        tabLogin.classList.add("active");
+        tabRegister.classList.remove("active");
+        loginForm.classList.remove("hidden");
+        registerForm.classList.add("hidden");
+        setMsg(authStatus, "", "");
+    });
+    tabRegister.addEventListener("click", () => {
+        tabRegister.classList.add("active");
+        tabLogin.classList.remove("active");
+        registerForm.classList.remove("hidden");
+        loginForm.classList.add("hidden");
+        setMsg(authStatus, "", "");
+    });
+
+    // ---------- Register ----------
+    document.getElementById("registerBtn").addEventListener("click", async () => {
+        const username = document.getElementById("regUsername").value.trim();
+        const email = document.getElementById("regEmail").value.trim();
+        const password = document.getElementById("regPassword").value;
+
+        if (username.length < 3) return setMsg(authStatus, "Username must be at least 3 characters.", "err");
+        if (password.length < 6) return setMsg(authStatus, "Password must be at least 6 characters.", "err");
+
+        setMsg(authStatus, "Creating account...", "");
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { username } },
+        });
+
+        if (error) return setMsg(authStatus, "Error: " + error.message, "err");
+        setMsg(authStatus, "Account created! Check your email to confirm it (if required), then log in from 'I have an account'.", "ok");
+    });
+
+    // ---------- Login ----------
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+
+        setMsg(authStatus, "Logging in...", "");
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) return setMsg(authStatus, "Error: " + error.message, "err");
+    });
+
+    // ---------- Logout ----------
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+        await supabase.auth.signOut();
+    });
+
+    // ---------- React to session changes ----------
+    async function showUploadPanel(session) {
+        authPanel.classList.add("hidden");
+        uploadPanel.classList.remove("hidden");
+
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", session.user.id)
+            .single();
+
+        usernameLabel.textContent = profile ? profile.username : session.user.email;
+    }
+
+    function showAuthPanel() {
+        uploadPanel.classList.add("hidden");
+        authPanel.classList.remove("hidden");
+    }
+
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            showUploadPanel(session);
+        } else {
+            showAuthPanel();
+        }
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) showUploadPanel(session);
+    });
+
+    // ---------- Upload form ----------
+    function updateButtonState() {
+        submitBtn.disabled = !(selectedFile && nameEl.value.trim().length > 0);
+    }
+
+    function handleFile(file) {
+        if (!file || file.type !== "image/png") return setMsg(statusEl, "PNG files only.", "err");
+        if (file.size > 2 * 1024 * 1024) return setMsg(statusEl, "File is too large (max 2MB).", "err");
+        selectedFile = file;
+        previewEl.src = URL.createObjectURL(file);
+        previewEl.style.display = "block";
+        setMsg(statusEl, "", "");
+        updateButtonState();
+    }
+
+    dropEl.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+    dropEl.addEventListener("dragover", (e) => { e.preventDefault(); dropEl.classList.add("dragover"); });
+    dropEl.addEventListener("dragleave", () => dropEl.classList.remove("dragover"));
+    dropEl.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropEl.classList.remove("dragover");
+        handleFile(e.dataTransfer.files[0]);
+    });
+    nameEl.addEventListener("input", updateButtonState);
+
+    submitBtn.addEventListener("click", async () => {
+        if (!selectedFile) return;
+        submitBtn.disabled = true;
+        setMsg(statusEl, "Uploading...", "");
+
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Session expired, please log in again.");
+
+            const fileId = crypto.randomUUID();
+            const path = `pending/${fileId}.png`;
+
+            const { error: uploadError } = await supabase.storage
+                .from(BUCKET)
+                .upload(path, selectedFile, { contentType: "image/png" });
+            if (uploadError) throw uploadError;
+
+            const { error: insertError } = await supabase
+                .from("capes")
+                .insert({
+                    user_id: user.id,
+                    name: nameEl.value.trim(),
+                    section: sectionEl.value,
+                    status: "pending",
+                    texture_path: path,
+                });
+            if (insertError) throw insertError;
+
+            setMsg(statusEl, "Done! Your cape is now pending review. 🎉", "ok");
+            selectedFile = null;
+            previewEl.style.display = "none";
+            nameEl.value = "";
+            fileInput.value = "";
+        } catch (err) {
+            console.error(err);
+            setMsg(statusEl, "Something went wrong: " + (err.message || err), "err");
+        } finally {
+            updateButtonState();
+        }
+    });
+</script>
+</body>
+</html>
