@@ -202,17 +202,87 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    const SUPABASE_URL = "https://ctryxzztvariziownhbt.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_x0_2CnxyGI2LrccmDhJqHQ_9sjQK350";
-    const BUCKET = "cape-textures";
+    // ============================================================
+    // PARTE 1: solo interfaz (tabs, drag&drop, botón "Upload a cape").
+    // Esto se registra PRIMERO y no depende de Supabase, así que
+    // funciona aunque el CDN de Supabase falle en cargar.
+    // ============================================================
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    document.querySelectorAll("#sectionTabs button").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll("#sectionTabs button").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentSectionFilter = btn.dataset.section;
+            renderGallery();
+        });
+    });
 
-    function publicTextureUrl(path) {
-        return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+    document.getElementById("uploadCta").addEventListener("click", () => {
+        document.getElementById("uploadWrapper").classList.remove("hidden");
+        document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
+    });
+
+    const tabLogin = document.getElementById("tabLogin");
+    const tabRegister = document.getElementById("tabRegister");
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+    const authStatus = document.getElementById("authStatus");
+
+    tabLogin.addEventListener("click", () => {
+        tabLogin.classList.add("active");
+        tabRegister.classList.remove("active");
+        loginForm.classList.remove("hidden");
+        registerForm.classList.add("hidden");
+        setMsg(authStatus, "", "");
+    });
+    tabRegister.addEventListener("click", () => {
+        tabRegister.classList.add("active");
+        tabLogin.classList.remove("active");
+        registerForm.classList.remove("hidden");
+        loginForm.classList.add("hidden");
+        setMsg(authStatus, "", "");
+    });
+
+    const dropEl = document.getElementById("drop");
+    const fileInput = document.getElementById("file");
+    const previewEl = document.getElementById("preview");
+    const nameEl = document.getElementById("name");
+    const submitBtn = document.getElementById("submitBtn");
+    const statusEl = document.getElementById("status");
+    let selectedFile = null;
+
+    function setMsg(el, msg, kind) {
+        el.textContent = msg;
+        el.className = kind || "";
+        el.style.display = msg ? "block" : "none";
     }
 
-    // ---------- Gallery (public, no login) ----------
+    function updateButtonState() {
+        submitBtn.disabled = !(selectedFile && nameEl.value.trim().length > 0);
+    }
+
+    function handleFile(file) {
+        if (!file || file.type !== "image/png") return setMsg(statusEl, "PNG files only.", "err");
+        if (file.size > 2 * 1024 * 1024) return setMsg(statusEl, "File is too large (max 2MB).", "err");
+        selectedFile = file;
+        previewEl.src = URL.createObjectURL(file);
+        previewEl.style.display = "block";
+        setMsg(statusEl, "", "");
+        updateButtonState();
+    }
+
+    dropEl.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+    dropEl.addEventListener("dragover", (e) => { e.preventDefault(); dropEl.classList.add("dragover"); });
+    dropEl.addEventListener("dragleave", () => dropEl.classList.remove("dragover"));
+    dropEl.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropEl.classList.remove("dragover");
+        handleFile(e.dataTransfer.files[0]);
+    });
+    nameEl.addEventListener("input", updateButtonState);
+
+    // ---------- Gallery rendering (UI part; data comes in part 2) ----------
     let allCapes = [];
     let currentSectionFilter = "all";
 
@@ -240,214 +310,158 @@
         `).join("");
     }
 
-    async function loadGallery() {
-        const { data, error } = await supabase
-            .from("capes")
-            .select("id,name,section,texture_path")
-            .eq("status", "approved")
-            .order("submitted_at", { ascending: false });
+    function publicTextureUrl(path) {
+        return `${SUPABASE_URL_FOR_IMAGES}/storage/v1/object/public/${BUCKET}/${path}`;
+    }
 
-        if (error) {
-            console.error(error);
-            return;
+    const SUPABASE_URL_FOR_IMAGES = "https://ctryxzztvariziownhbt.supabase.co";
+    const BUCKET = "cape-textures";
+
+    // ============================================================
+    // PARTE 2: todo lo que depende de Supabase, protegido con
+    // try/catch. Si esto falla (ej. el CDN no cargó), la interfaz
+    // de arriba sigue funcionando igual, solo que sin datos reales.
+    // ============================================================
+    try {
+        const SUPABASE_URL = "https://ctryxzztvariziownhbt.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_x0_2CnxyGI2LrccmDhJqHQ_9sjQK350";
+
+        if (!window.supabase) {
+            throw new Error("El SDK de Supabase no cargó (revisá tu conexión o algún bloqueador de scripts).");
         }
 
-        allCapes = data || [];
-        renderGallery();
-    }
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    document.querySelectorAll("#sectionTabs button").forEach(btn => {
-        btn.addEventListener("click", () => {
-            document.querySelectorAll("#sectionTabs button").forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            currentSectionFilter = btn.dataset.section;
-            renderGallery();
-        });
-    });
-
-    document.getElementById("uploadCta").addEventListener("click", () => {
-        document.getElementById("uploadWrapper").classList.remove("hidden");
-        document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
-    });
-
-    loadGallery();
-
-    // ---------- Elements ----------
-    const authPanel = document.getElementById("authPanel");
-    const uploadPanel = document.getElementById("uploadPanel");
-    const usernameLabel = document.getElementById("usernameLabel");
-
-    const tabLogin = document.getElementById("tabLogin");
-    const tabRegister = document.getElementById("tabRegister");
-    const loginForm = document.getElementById("loginForm");
-    const registerForm = document.getElementById("registerForm");
-    const authStatus = document.getElementById("authStatus");
-
-    const dropEl = document.getElementById("drop");
-    const fileInput = document.getElementById("file");
-    const previewEl = document.getElementById("preview");
-    const nameEl = document.getElementById("name");
-    const sectionEl = document.getElementById("section");
-    const submitBtn = document.getElementById("submitBtn");
-    const statusEl = document.getElementById("status");
-
-    let selectedFile = null;
-
-    function setMsg(el, msg, kind) {
-        el.textContent = msg;
-        el.className = kind || "";
-        el.style.display = msg ? "block" : "none";
-    }
-
-    // ---------- Login/register tabs ----------
-    tabLogin.addEventListener("click", () => {
-        tabLogin.classList.add("active");
-        tabRegister.classList.remove("active");
-        loginForm.classList.remove("hidden");
-        registerForm.classList.add("hidden");
-        setMsg(authStatus, "", "");
-    });
-    tabRegister.addEventListener("click", () => {
-        tabRegister.classList.add("active");
-        tabLogin.classList.remove("active");
-        registerForm.classList.remove("hidden");
-        loginForm.classList.add("hidden");
-        setMsg(authStatus, "", "");
-    });
-
-    // ---------- Register ----------
-    document.getElementById("registerBtn").addEventListener("click", async () => {
-        const username = document.getElementById("regUsername").value.trim();
-        const email = document.getElementById("regEmail").value.trim();
-        const password = document.getElementById("regPassword").value;
-
-        if (username.length < 3) return setMsg(authStatus, "Username must be at least 3 characters.", "err");
-        if (password.length < 6) return setMsg(authStatus, "Password must be at least 6 characters.", "err");
-
-        setMsg(authStatus, "Creating account...", "");
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { username } },
-        });
-
-        if (error) return setMsg(authStatus, "Error: " + error.message, "err");
-        setMsg(authStatus, "Account created! Check your email to confirm it (if required), then log in from 'I have an account'.", "ok");
-    });
-
-    // ---------- Login ----------
-    document.getElementById("loginBtn").addEventListener("click", async () => {
-        const email = document.getElementById("loginEmail").value.trim();
-        const password = document.getElementById("loginPassword").value;
-
-        setMsg(authStatus, "Logging in...", "");
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) return setMsg(authStatus, "Error: " + error.message, "err");
-    });
-
-    // ---------- Logout ----------
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-        await supabase.auth.signOut();
-    });
-
-    // ---------- React to session changes ----------
-    async function showUploadPanel(session) {
-        document.getElementById("uploadWrapper").classList.remove("hidden");
-        authPanel.classList.add("hidden");
-        uploadPanel.classList.remove("hidden");
-
-        const { data: profile } = await supabase
-            .from("profiles")
-            .select("username")
-            .eq("id", session.user.id)
-            .single();
-
-        usernameLabel.textContent = profile ? profile.username : session.user.email;
-    }
-
-    function showAuthPanel() {
-        uploadPanel.classList.add("hidden");
-        authPanel.classList.remove("hidden");
-    }
-
-    supabase.auth.onAuthStateChange((event, session) => {
-        if (session) {
-            showUploadPanel(session);
-        } else {
-            showAuthPanel();
-        }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) showUploadPanel(session);
-    });
-
-    // ---------- Upload form ----------
-    function updateButtonState() {
-        submitBtn.disabled = !(selectedFile && nameEl.value.trim().length > 0);
-    }
-
-    function handleFile(file) {
-        if (!file || file.type !== "image/png") return setMsg(statusEl, "PNG files only.", "err");
-        if (file.size > 2 * 1024 * 1024) return setMsg(statusEl, "File is too large (max 2MB).", "err");
-        selectedFile = file;
-        previewEl.src = URL.createObjectURL(file);
-        previewEl.style.display = "block";
-        setMsg(statusEl, "", "");
-        updateButtonState();
-    }
-
-    dropEl.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
-    dropEl.addEventListener("dragover", (e) => { e.preventDefault(); dropEl.classList.add("dragover"); });
-    dropEl.addEventListener("dragleave", () => dropEl.classList.remove("dragover"));
-    dropEl.addEventListener("drop", (e) => {
-        e.preventDefault();
-        dropEl.classList.remove("dragover");
-        handleFile(e.dataTransfer.files[0]);
-    });
-    nameEl.addEventListener("input", updateButtonState);
-
-    submitBtn.addEventListener("click", async () => {
-        if (!selectedFile) return;
-        submitBtn.disabled = true;
-        setMsg(statusEl, "Uploading...", "");
-
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("Session expired, please log in again.");
-
-            const fileId = crypto.randomUUID();
-            const path = `pending/${fileId}.png`;
-
-            const { error: uploadError } = await supabase.storage
-                .from(BUCKET)
-                .upload(path, selectedFile, { contentType: "image/png" });
-            if (uploadError) throw uploadError;
-
-            const { error: insertError } = await supabase
+        // ---------- Gallery data ----------
+        async function loadGallery() {
+            const { data, error } = await supabase
                 .from("capes")
-                .insert({
-                    user_id: user.id,
-                    name: nameEl.value.trim(),
-                    section: sectionEl.value,
-                    status: "pending",
-                    texture_path: path,
-                });
-            if (insertError) throw insertError;
+                .select("id,name,section,texture_path")
+                .eq("status", "approved")
+                .order("submitted_at", { ascending: false });
 
-            setMsg(statusEl, "Done! Your cape is now pending review. 🎉", "ok");
-            selectedFile = null;
-            previewEl.style.display = "none";
-            nameEl.value = "";
-            fileInput.value = "";
-        } catch (err) {
-            console.error(err);
-            setMsg(statusEl, "Something went wrong: " + (err.message || err), "err");
-        } finally {
-            updateButtonState();
+            if (error) {
+                console.error(error);
+                return;
+            }
+            allCapes = data || [];
+            renderGallery();
         }
-    });
+        loadGallery();
+
+        // ---------- Elements that depend on auth ----------
+        const authPanel = document.getElementById("authPanel");
+        const uploadPanel = document.getElementById("uploadPanel");
+        const usernameLabel = document.getElementById("usernameLabel");
+        const sectionEl = document.getElementById("section");
+
+        // ---------- Register ----------
+        document.getElementById("registerBtn").addEventListener("click", async () => {
+            const username = document.getElementById("regUsername").value.trim();
+            const email = document.getElementById("regEmail").value.trim();
+            const password = document.getElementById("regPassword").value;
+
+            if (username.length < 3) return setMsg(authStatus, "Username must be at least 3 characters.", "err");
+            if (password.length < 6) return setMsg(authStatus, "Password must be at least 6 characters.", "err");
+
+            setMsg(authStatus, "Creating account...", "");
+            const { error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: { data: { username } },
+            });
+
+            if (error) return setMsg(authStatus, "Error: " + error.message, "err");
+            setMsg(authStatus, "Account created! Check your email to confirm it (if required), then log in.", "ok");
+        });
+
+        // ---------- Login ----------
+        document.getElementById("loginBtn").addEventListener("click", async () => {
+            const email = document.getElementById("loginEmail").value.trim();
+            const password = document.getElementById("loginPassword").value;
+
+            setMsg(authStatus, "Logging in...", "");
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) return setMsg(authStatus, "Error: " + error.message, "err");
+        });
+
+        // ---------- Logout ----------
+        document.getElementById("logoutBtn").addEventListener("click", async () => {
+            await supabase.auth.signOut();
+        });
+
+        // ---------- Session state ----------
+        async function showUploadPanel(session) {
+            document.getElementById("uploadWrapper").classList.remove("hidden");
+            authPanel.classList.add("hidden");
+            uploadPanel.classList.remove("hidden");
+
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("username")
+                .eq("id", session.user.id)
+                .single();
+
+            usernameLabel.textContent = profile ? profile.username : session.user.email;
+        }
+
+        function showAuthPanel() {
+            uploadPanel.classList.add("hidden");
+            authPanel.classList.remove("hidden");
+        }
+
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session) showUploadPanel(session); else showAuthPanel();
+        });
+
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) showUploadPanel(session);
+        });
+
+        // ---------- Submit ----------
+        submitBtn.addEventListener("click", async () => {
+            if (!selectedFile) return;
+            submitBtn.disabled = true;
+            setMsg(statusEl, "Uploading...", "");
+
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error("Session expired, please log in again.");
+
+                const fileId = crypto.randomUUID();
+                const path = `pending/${fileId}.png`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from(BUCKET)
+                    .upload(path, selectedFile, { contentType: "image/png" });
+                if (uploadError) throw uploadError;
+
+                const { error: insertError } = await supabase
+                    .from("capes")
+                    .insert({
+                        user_id: user.id,
+                        name: nameEl.value.trim(),
+                        section: sectionEl.value,
+                        status: "pending",
+                        texture_path: path,
+                    });
+                if (insertError) throw insertError;
+
+                setMsg(statusEl, "Done! Your cape is now pending review. 🎉", "ok");
+                selectedFile = null;
+                previewEl.style.display = "none";
+                nameEl.value = "";
+                fileInput.value = "";
+            } catch (err) {
+                console.error(err);
+                setMsg(statusEl, "Something went wrong: " + (err.message || err), "err");
+            } finally {
+                updateButtonState();
+            }
+        });
+    } catch (err) {
+        console.error("[capes_mtg web] Supabase failed to initialize:", err);
+    }
 </script>
 </body>
 </html>
