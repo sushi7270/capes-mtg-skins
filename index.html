@@ -135,65 +135,67 @@
     <div id="gallery"></div>
     <p id="galleryEmpty" class="hidden">No capes approved yet — be the first to upload one!</p>
 
-    <h2 id="uploadSection">Upload a cape</h2>
+    <div id="uploadWrapper" class="hidden">
+        <h2 id="uploadSection">Upload a cape</h2>
 
-    <!-- ============ NOT LOGGED IN ============ -->
-    <div class="panel" id="authPanel">
-        <div class="tabs">
-            <button id="tabLogin" class="active">I have an account</button>
-            <button id="tabRegister">Sign up</button>
+        <!-- ============ NOT LOGGED IN ============ -->
+        <div class="panel" id="authPanel">
+            <div class="tabs">
+                <button id="tabLogin" class="active">Login</button>
+                <button id="tabRegister">Register</button>
+            </div>
+
+            <!-- Login -->
+            <div id="loginForm">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" placeholder="you@gmail.com">
+                <label for="loginPassword">Password</label>
+                <input type="password" id="loginPassword">
+                <button id="loginBtn">Log in</button>
+            </div>
+
+            <!-- Register -->
+            <div id="registerForm" class="hidden">
+                <label for="regUsername">Username</label>
+                <input type="text" id="regUsername" placeholder="e.g. sushi7270" maxlength="20">
+                <label for="regEmail">Email (Gmail or any other)</label>
+                <input type="email" id="regEmail" placeholder="you@gmail.com">
+                <label for="regPassword">Password</label>
+                <input type="password" id="regPassword" placeholder="At least 6 characters">
+                <button id="registerBtn">Create account</button>
+                <p class="hint">You'll get a confirmation email before you can log in (unless the admin disabled that).</p>
+            </div>
+
+            <div id="authStatus"></div>
         </div>
 
-        <!-- Login -->
-        <div id="loginForm">
-            <label for="loginEmail">Email</label>
-            <input type="email" id="loginEmail" placeholder="you@gmail.com">
-            <label for="loginPassword">Password</label>
-            <input type="password" id="loginPassword">
-            <button id="loginBtn">Log in</button>
-        </div>
+        <!-- ============ LOGGED IN ============ -->
+        <div id="uploadPanel" class="hidden">
+            <div class="userbar">
+                <span>Logged in as <b id="usernameLabel"></b></span>
+                <button id="logoutBtn">Log out</button>
+            </div>
 
-        <!-- Register -->
-        <div id="registerForm" class="hidden">
-            <label for="regUsername">Username</label>
-            <input type="text" id="regUsername" placeholder="e.g. sushi7270" maxlength="20">
-            <label for="regEmail">Email (Gmail or any other)</label>
-            <input type="email" id="regEmail" placeholder="you@gmail.com">
-            <label for="regPassword">Password</label>
-            <input type="password" id="regPassword" placeholder="At least 6 characters">
-            <button id="registerBtn">Create account</button>
-            <p class="hint">You'll get a confirmation email before you can log in (unless the admin disabled that).</p>
-        </div>
+            <div class="panel">
+                <label for="name">Cape name</label>
+                <input type="text" id="name" placeholder="e.g. Dragon Cape" maxlength="60">
 
-        <div id="authStatus"></div>
-    </div>
+                <label for="section">Section</label>
+                <select id="section">
+                    <option value="aesthetic">Aesthetic</option>
+                    <option value="meme">Meme</option>
+                    <option value="other">Other</option>
+                </select>
 
-    <!-- ============ LOGGED IN ============ -->
-    <div id="uploadPanel" class="hidden">
-        <div class="userbar">
-            <span>Logged in as <b id="usernameLabel"></b></span>
-            <button id="logoutBtn">Log out</button>
-        </div>
+                <label for="file">Image (PNG, square recommended, max 512x512)</label>
+                <div id="drop">Drag your PNG here or click to choose</div>
+                <input type="file" id="file" accept="image/png" style="display:none">
+                <img id="preview" alt="preview">
+                <p class="hint">A transparent-background PNG, as it would look in-game, is recommended.</p>
 
-        <div class="panel">
-            <label for="name">Cape name</label>
-            <input type="text" id="name" placeholder="e.g. Dragon Cape" maxlength="60">
-
-            <label for="section">Section</label>
-            <select id="section">
-                <option value="aesthetic">Aesthetic</option>
-                <option value="meme">Meme</option>
-                <option value="other">Other</option>
-            </select>
-
-            <label for="file">Image (PNG, square recommended, max 512x512)</label>
-            <div id="drop">Drag your PNG here or click to choose</div>
-            <input type="file" id="file" accept="image/png" style="display:none">
-            <img id="preview" alt="preview">
-            <p class="hint">A transparent-background PNG, as it would look in-game, is recommended.</p>
-
-            <button id="submitBtn" disabled>Submit for review</button>
-            <div id="status"></div>
+                <button id="submitBtn" disabled>Submit for review</button>
+                <div id="status"></div>
+            </div>
         </div>
     </div>
 </main>
@@ -264,6 +266,7 @@
     });
 
     document.getElementById("uploadCta").addEventListener("click", () => {
+        document.getElementById("uploadWrapper").classList.remove("hidden");
         document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
     });
 
@@ -349,6 +352,7 @@
 
     // ---------- React to session changes ----------
     async function showUploadPanel(session) {
+        document.getElementById("uploadWrapper").classList.remove("hidden");
         authPanel.classList.add("hidden");
         uploadPanel.classList.remove("hidden");
 
