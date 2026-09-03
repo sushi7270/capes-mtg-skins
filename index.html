@@ -1,227 +1,410 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>capes_mtg — Cape Skins</title>
+<title>Capes MTG - Home</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-    :root {
-        --bg: #14161c;
-        --panel: #1e2129;
-        --accent: #7c5cff;
-        --text: #eaeaf0;
-        --muted: #9a9aab;
-        --ok: #4ade80;
-        --err: #f87171;
-    }
-    * { box-sizing: border-box; }
-    body {
-        margin: 0;
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        display: flex;
-        justify-content: center;
-        padding: 2.5rem 1rem;
-    }
-    main { width: 100%; max-width: 640px; }
-    h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
-    h2 { font-size: 1.1rem; margin: 2rem 0 0.75rem; }
-    p.sub { color: var(--muted); margin-top: 0; margin-bottom: 2rem; font-size: 0.9rem; }
-    .panel { background: var(--panel); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
-    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.4rem; margin-top: 1rem; }
-    label:first-child { margin-top: 0; }
-    input[type="text"], input[type="email"], input[type="password"], select {
-        width: 100%;
-        padding: 0.6rem 0.7rem;
-        border-radius: 8px;
-        border: 1px solid #333;
-        background: #10121a;
-        color: var(--text);
-        font-size: 0.95rem;
-    }
-    #drop {
-        border: 2px dashed #333;
-        border-radius: 10px;
-        padding: 1.5rem;
-        text-align: center;
-        color: var(--muted);
-        cursor: pointer;
-        margin-top: 0.4rem;
-        transition: border-color 0.15s;
-    }
-    #drop.dragover { border-color: var(--accent); color: var(--text); }
-    #preview { max-width: 100%; max-height: 140px; image-rendering: pixelated; margin-top: 0.75rem; display: none; }
-    button {
-        width: 100%;
-        margin-top: 1.5rem;
-        padding: 0.75rem;
-        border: none;
-        border-radius: 8px;
-        background: var(--accent);
-        color: white;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-    }
-    button.secondary { background: transparent; color: var(--muted); margin-top: 0.5rem; font-weight: 400; font-size: 0.85rem; text-decoration: underline; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    #status, #authStatus { margin-top: 1rem; font-size: 0.9rem; text-align: center; display: none; }
-    .ok { color: var(--ok); }
-    .err { color: var(--err); }
-    .hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; }
-    .userbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.85rem;
-        color: var(--muted);
-        margin-bottom: 1rem;
-    }
-    .userbar b { color: var(--text); }
-    .userbar button { width: auto; margin: 0; padding: 0.35rem 0.7rem; font-size: 0.8rem; background: #2a2d38; }
-    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-    .tabs button {
-        flex: 1;
-        margin: 0;
-        background: #2a2d38;
-        color: var(--muted);
-        font-weight: 500;
-        padding: 0.5rem;
-    }
-    .tabs button.active { background: var(--accent); color: white; }
-    .hidden { display: none !important; }
+:root {
+    --bg: #0a0a0b;
+    --bg-alt: #131315;
+    --card: #17171a;
+    --border: #26262a;
+    --accent: #9b87e0;
+    --accent-strong: #b3a3ea;
+    --text: #ededf0;
+    --muted: #8a8a90;
+    --link-green: #4ade80;
+}
+* { box-sizing: border-box; }
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+}
 
-    /* Gallery */
-    #gallery {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-        gap: 0.75rem;
-    }
-    .cape-card {
-        background: var(--panel);
-        border-radius: 10px;
-        padding: 0.6rem;
-        text-align: center;
-    }
-    .cape-card img {
-        width: 100%;
-        aspect-ratio: 1;
-        object-fit: contain;
-        image-rendering: pixelated;
-        background: #10121a;
-        border-radius: 6px;
-    }
-    .cape-card .cape-name { font-size: 0.78rem; margin-top: 0.4rem; }
-    .cape-card .cape-section { font-size: 0.7rem; color: var(--muted); }
-    #galleryEmpty { color: var(--muted); font-size: 0.9rem; }
-    #uploadPromptBtn { margin-top: 0; }
+header {
+    background: var(--bg-alt);
+    padding: 28px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+header h1 {
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+nav a, nav span, nav button.linklike {
+    color: var(--link-green);
+    text-decoration: none;
+    margin: 0 8px;
+    font-size: 15px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+nav a:hover, nav button.linklike:hover { color: #86efac; }
+nav .plain { color: var(--muted); font-weight: 400; }
+
+main { padding: 28px 24px 20px; max-width: 1100px; margin: 0 auto; }
+h2 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    margin: 0 0 18px;
+    color: var(--text);
+}
+
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.toolbar input[type="text"] {
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-alt);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    flex: 1;
+    min-width: 180px;
+}
+.toolbar input[type="text"]:focus { outline: none; border-color: var(--accent); }
+.toolbar button, .section-tabs button {
+    padding: 9px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-alt);
+    color: var(--muted);
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.toolbar button:hover, .section-tabs button:hover { border-color: var(--accent); color: var(--text); }
+.section-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+.section-tabs button.active { background: var(--accent); border-color: var(--accent); color: #14101f; }
+
+.skins-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 14px;
+}
+.skin-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    transition: border-color 0.15s ease;
+}
+.skin-item:hover {
+    border-color: var(--accent);
+}
+.author-info { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.avatar-fallback {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: #14101f; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+}
+.author-info strong { color: var(--text); font-size: 14px; font-weight: 600; }
+.skin-section-tag {
+    font-size: 11px; color: var(--accent); text-transform: uppercase;
+    letter-spacing: 0.5px; font-weight: 700;
+}
+.skin-image img {
+    width: 100%; aspect-ratio: 1; object-fit: contain;
+    background: var(--bg-alt);
+    image-rendering: pixelated;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 10px 0;
+}
+.skin-name { font-size: 14px; margin: 4px 0 0; font-weight: 600; }
+
+.pagination { margin-top: 26px; text-align: center; font-size: 15px; color: var(--muted); }
+.pagination a, .pagination span {
+    color: var(--link-green); margin: 0 10px; text-decoration: none; cursor: pointer; font-weight: 600;
+}
+.pagination a:hover { color: #86efac; }
+.pagination .disabled { color: #3a3450; cursor: default; }
+
+.panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    max-width: 420px;
+    margin: 0 auto;
+}
+.panel label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 5px; font-weight: 600; }
+.panel label:first-child { margin-top: 0; }
+.panel input[type="text"], .panel input[type="email"], .panel input[type="password"], .panel select {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg-alt); color: var(--text); font-family: 'Nunito', sans-serif; font-size: 15px;
+    box-sizing: border-box;
+}
+.panel input:focus, .panel select:focus { outline: none; border-color: var(--accent); }
+.panel button.primary {
+    width: 100%; margin-top: 18px; padding: 12px; border: none; border-radius: 8px;
+    background: var(--accent); color: #14101f; font-size: 15px; font-weight: 700; cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+}
+.panel button.primary:hover { background: var(--accent-strong); }
+.panel button.primary:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+.panel .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.panel .tabs button {
+    flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg-alt); color: var(--muted); cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 600;
+}
+.panel .tabs button.active { background: var(--accent); color: #14101f; border-color: var(--accent); }
+.hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+#drop {
+    border: 1px dashed var(--border); border-radius: 10px; padding: 20px; text-align: center;
+    color: var(--muted); cursor: pointer; margin-top: 6px;
+}
+#drop.dragover { border-color: var(--accent); color: var(--text); }
+#uploadPreview { max-width: 100%; max-height: 130px; image-rendering: pixelated; margin-top: 10px; display: none; border-radius: 8px; }
+#status, #authStatus { margin-top: 12px; font-size: 14px; text-align: center; display: none; }
+.ok { color: #4ade80; }
+.err { color: #f87171; }
+
+footer {
+    margin-top: 34px; padding: 18px; text-align: center;
+    border-top: 1px solid var(--border); color: var(--muted); font-size: 13px;
+}
+footer a { color: var(--link-green); text-decoration: none; }
+footer a:hover { color: #86efac; }
+
+.hidden { display: none !important; }
+.empty-msg { color: var(--muted); font-size: 15px; }
+
+@media (max-width: 768px) {
+    body { font-size: 14px; }
+    header h1 { font-size: 19px; }
+    nav a, nav span, nav button.linklike { font-size: 13px; }
+}
 </style>
 </head>
 <body>
-<main>
-    <h1>🧣 capes_mtg</h1>
-    <p class="sub">Cape skins for Luanti. Browse below — no account needed. To upload your own, you'll need a free account.</p>
+<header>
+    <h1>Capes MTG</h1>
+    <nav id="navArea">
+        <span class="plain">Loading…</span>
+    </nav>
+</header>
 
-    <!-- ============ PUBLIC GALLERY (no login needed) ============ -->
+<main>
     <h2>Browse capes</h2>
-    <button id="uploadCta" style="margin-top:0;margin-bottom:1rem;">Upload a cape</button>
-    <div class="tabs" id="sectionTabs">
+
+    <div class="toolbar">
+        <input type="text" id="searchInput" placeholder="Search capes...">
+    </div>
+
+    <div class="section-tabs" id="sectionTabs">
         <button data-section="all" class="active">All</button>
         <button data-section="aesthetic">Aesthetic</button>
         <button data-section="meme">Meme</button>
         <button data-section="other">Other</button>
     </div>
-    <div id="gallery"></div>
-    <p id="galleryEmpty" class="hidden">No capes approved yet — be the first to upload one!</p>
 
-    <div id="uploadWrapper" class="hidden">
-        <h2 id="uploadSection">Upload a cape</h2>
+    <p id="galleryEmpty" class="empty-msg hidden">No capes found.</p>
+    <ul class="skins-list" id="gallery"></ul>
 
-        <!-- ============ NOT LOGGED IN ============ -->
+    <div class="pagination" id="pagination"></div>
+
+    <div id="uploadAnchor"></div>
+
+    <!-- ============ UPLOAD SECTION (shown on demand) ============ -->
+    <div id="uploadWrapper" class="hidden" style="margin-top: 40px;">
+        <h2>Upload a cape</h2>
+
         <div class="panel" id="authPanel">
             <div class="tabs">
                 <button id="tabLogin" class="active">Login</button>
                 <button id="tabRegister">Register</button>
             </div>
 
-            <!-- Login -->
             <div id="loginForm">
                 <label for="loginEmail">Email</label>
                 <input type="email" id="loginEmail" placeholder="you@gmail.com">
                 <label for="loginPassword">Password</label>
                 <input type="password" id="loginPassword">
-                <button id="loginBtn">Log in</button>
+                <button class="primary" id="loginBtn">Log in</button>
             </div>
 
-            <!-- Register -->
             <div id="registerForm" class="hidden">
                 <label for="regUsername">Username</label>
-                <input type="text" id="regUsername" placeholder="e.g. sushi7270" maxlength="20">
+                <input type="text" id="regUsername" placeholder="e.g. cape_fan" maxlength="20">
                 <label for="regEmail">Email (Gmail or any other)</label>
                 <input type="email" id="regEmail" placeholder="you@gmail.com">
                 <label for="regPassword">Password</label>
                 <input type="password" id="regPassword" placeholder="At least 6 characters">
-                <button id="registerBtn">Create account</button>
+                <button class="primary" id="registerBtn">Create account</button>
                 <p class="hint">You'll get a confirmation email before you can log in (unless the admin disabled that).</p>
             </div>
 
             <div id="authStatus"></div>
         </div>
 
-        <!-- ============ LOGGED IN ============ -->
         <div id="uploadPanel" class="hidden">
-            <div class="userbar">
-                <span>Logged in as <b id="usernameLabel"></b></span>
-                <button id="logoutBtn">Log out</button>
-            </div>
-
             <div class="panel">
-                <label for="name">Cape name</label>
-                <input type="text" id="name" placeholder="e.g. Dragon Cape" maxlength="60">
+                <label for="capeName">Cape name</label>
+                <input type="text" id="capeName" placeholder="e.g. Dragon Cape" maxlength="60">
 
-                <label for="section">Section</label>
-                <select id="section">
+                <label for="capeSection">Section</label>
+                <select id="capeSection">
                     <option value="aesthetic">Aesthetic</option>
                     <option value="meme">Meme</option>
                     <option value="other">Other</option>
                 </select>
 
-                <label for="file">Image (PNG, square recommended, max 512x512)</label>
+                <label for="capeFile">Image (PNG, square recommended, max 512x512)</label>
                 <div id="drop">Drag your PNG here or click to choose</div>
-                <input type="file" id="file" accept="image/png" style="display:none">
-                <img id="preview" alt="preview">
+                <input type="file" id="capeFile" accept="image/png" style="display:none">
+                <img id="uploadPreview" alt="preview">
                 <p class="hint">A transparent-background PNG, as it would look in-game, is recommended.</p>
 
-                <button id="submitBtn" disabled>Submit for review</button>
+                <button class="primary" id="submitBtn" disabled>Submit for review</button>
                 <div id="status"></div>
             </div>
         </div>
     </div>
 </main>
 
+<footer>
+    Capes MTG — a Luanti mod. <a href="https://content.luanti.org/packages/Sushi7270/capes_mtg/" target="_blank" rel="noopener">View on ContentDB</a>
+</footer>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    // ============================================================
-    // PARTE 1: solo interfaz (tabs, drag&drop, botón "Upload a cape").
-    // Esto se registra PRIMERO y no depende de Supabase, así que
-    // funciona aunque el CDN de Supabase falle en cargar.
-    // ============================================================
+    /* ============================================================
+       PART 1 — UI ONLY. No Supabase dependency. Registered first so
+       navigation/search/tabs/upload-form-UI work even if the
+       Supabase SDK fails to load for any reason.
+       ============================================================ */
+
+    const SUPABASE_URL = "https://ctryxzztvariziownhbt.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_x0_2CnxyGI2LrccmDhJqHQ_9sjQK350";
+    const BUCKET = "cape-textures";
+    const PAGE_SIZE = 12;
+
+    function publicTextureUrl(path) {
+        return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+    }
+
+    function setMsg(el, msg, kind) {
+        el.textContent = msg;
+        el.className = kind || "";
+        el.style.display = msg ? "block" : "none";
+    }
+
+    // ---------- Gallery state ----------
+    let allCapes = [];
+    let sectionFilter = "all";
+    let searchTerm = "";
+    let currentPage = 1;
+
+    function getFilteredCapes() {
+        return allCapes.filter(c => {
+            const matchesSection = sectionFilter === "all" || c.section === sectionFilter;
+            const matchesSearch = !searchTerm || c.name.toLowerCase().includes(searchTerm);
+            return matchesSection && matchesSearch;
+        });
+    }
+
+    function renderGallery() {
+        const galleryEl = document.getElementById("gallery");
+        const emptyEl = document.getElementById("galleryEmpty");
+        const paginationEl = document.getElementById("pagination");
+
+        const filtered = getFilteredCapes();
+
+        if (filtered.length === 0) {
+            galleryEl.innerHTML = "";
+            paginationEl.innerHTML = "";
+            emptyEl.classList.remove("hidden");
+            return;
+        }
+        emptyEl.classList.add("hidden");
+
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const pageItems = filtered.slice(start, start + PAGE_SIZE);
+
+        galleryEl.innerHTML = pageItems.map(cape => {
+            const initial = (cape.username || "?").charAt(0).toUpperCase();
+            return `
+            <li class="skin-item">
+                <div class="author-info">
+                    <div class="avatar-fallback">${initial}</div>
+                    <strong>${cape.username || "unknown"}</strong>
+                </div>
+                <div class="skin-section-tag">${cape.section}</div>
+                <div class="skin-image">
+                    <img src="${publicTextureUrl(cape.texture_path)}" alt="${cape.name}">
+                </div>
+                <div class="skin-name">${cape.name}</div>
+            </li>`;
+        }).join("");
+
+        // Pagination
+        let pagHtml = "";
+        pagHtml += currentPage > 1
+            ? `<a data-page="${currentPage - 1}">Previous</a>`
+            : `<span class="disabled">Previous</span>`;
+        pagHtml += ` Page ${currentPage} of ${totalPages} `;
+        pagHtml += currentPage < totalPages
+            ? `<a data-page="${currentPage + 1}">Next</a>`
+            : `<span class="disabled">Next</span>`;
+        paginationEl.innerHTML = pagHtml;
+
+        paginationEl.querySelectorAll("a[data-page]").forEach(a => {
+            a.addEventListener("click", () => {
+                currentPage = parseInt(a.dataset.page, 10);
+                renderGallery();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+        });
+    }
 
     document.querySelectorAll("#sectionTabs button").forEach(btn => {
         btn.addEventListener("click", () => {
             document.querySelectorAll("#sectionTabs button").forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
-            currentSectionFilter = btn.dataset.section;
+            sectionFilter = btn.dataset.section;
+            currentPage = 1;
             renderGallery();
         });
     });
 
-    document.getElementById("uploadCta").addEventListener("click", () => {
-        document.getElementById("uploadWrapper").classList.remove("hidden");
-        document.getElementById("uploadSection").scrollIntoView({ behavior: "smooth" });
+    let searchDebounce = null;
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            searchTerm = e.target.value.trim().toLowerCase();
+            currentPage = 1;
+            renderGallery();
+        }, 200);
     });
 
+    // ---------- Login/Register tabs (UI only) ----------
     const tabLogin = document.getElementById("tabLogin");
     const tabRegister = document.getElementById("tabRegister");
     const loginForm = document.getElementById("loginForm");
@@ -243,21 +426,21 @@
         setMsg(authStatus, "", "");
     });
 
+    function openUploadSection() {
+        document.getElementById("uploadWrapper").classList.remove("hidden");
+        document.getElementById("uploadAnchor").scrollIntoView({ behavior: "smooth" });
+    }
+
+    // ---------- Upload form UI (drag/drop, preview) ----------
     const dropEl = document.getElementById("drop");
-    const fileInput = document.getElementById("file");
-    const previewEl = document.getElementById("preview");
-    const nameEl = document.getElementById("name");
+    const fileInput = document.getElementById("capeFile");
+    const previewEl = document.getElementById("uploadPreview");
+    const nameEl = document.getElementById("capeName");
     const submitBtn = document.getElementById("submitBtn");
     const statusEl = document.getElementById("status");
     let selectedFile = null;
 
-    function setMsg(el, msg, kind) {
-        el.textContent = msg;
-        el.className = kind || "";
-        el.style.display = msg ? "block" : "none";
-    }
-
-    function updateButtonState() {
+    function updateSubmitState() {
         submitBtn.disabled = !(selectedFile && nameEl.value.trim().length > 0);
     }
 
@@ -268,7 +451,7 @@
         previewEl.src = URL.createObjectURL(file);
         previewEl.style.display = "block";
         setMsg(statusEl, "", "");
-        updateButtonState();
+        updateSubmitState();
     }
 
     dropEl.addEventListener("click", () => fileInput.click());
@@ -280,80 +463,90 @@
         dropEl.classList.remove("dragover");
         handleFile(e.dataTransfer.files[0]);
     });
-    nameEl.addEventListener("input", updateButtonState);
+    nameEl.addEventListener("input", updateSubmitState);
 
-    // ---------- Gallery rendering (UI part; data comes in part 2) ----------
-    let allCapes = [];
-    let currentSectionFilter = "all";
-
-    function renderGallery() {
-        const galleryEl = document.getElementById("gallery");
-        const emptyEl = document.getElementById("galleryEmpty");
-
-        const filtered = currentSectionFilter === "all"
-            ? allCapes
-            : allCapes.filter(c => c.section === currentSectionFilter);
-
-        if (filtered.length === 0) {
-            galleryEl.innerHTML = "";
-            emptyEl.classList.remove("hidden");
-            return;
-        }
-        emptyEl.classList.add("hidden");
-
-        galleryEl.innerHTML = filtered.map(cape => `
-            <div class="cape-card">
-                <img src="${publicTextureUrl(cape.texture_path)}" alt="${cape.name}">
-                <div class="cape-name">${cape.name}</div>
-                <div class="cape-section">${cape.section}</div>
-            </div>
-        `).join("");
-    }
-
-    function publicTextureUrl(path) {
-        return `${SUPABASE_URL_FOR_IMAGES}/storage/v1/object/public/${BUCKET}/${path}`;
-    }
-
-    const SUPABASE_URL_FOR_IMAGES = "https://ctryxzztvariziownhbt.supabase.co";
-    const BUCKET = "cape-textures";
-
-    // ============================================================
-    // PARTE 2: todo lo que depende de Supabase, protegido con
-    // try/catch. Si esto falla (ej. el CDN no cargó), la interfaz
-    // de arriba sigue funcionando igual, solo que sin datos reales.
-    // ============================================================
+    /* ============================================================
+       PART 2 — everything that talks to Supabase, wrapped in
+       try/catch so a CDN failure doesn't break Part 1's UI.
+       ============================================================ */
     try {
-        const SUPABASE_URL = "https://ctryxzztvariziownhbt.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_x0_2CnxyGI2LrccmDhJqHQ_9sjQK350";
-
         if (!window.supabase) {
-            throw new Error("El SDK de Supabase no cargó (revisá tu conexión o algún bloqueador de scripts).");
+            throw new Error("Supabase SDK failed to load (check your connection or an ad/script blocker).");
         }
 
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const navArea = document.getElementById("navArea");
+        const authPanel = document.getElementById("authPanel");
+        const uploadPanel = document.getElementById("uploadPanel");
+        const sectionSelect = document.getElementById("capeSection");
 
-        // ---------- Gallery data ----------
+        // ---------- Load gallery (joins username via a view-less two-step) ----------
         async function loadGallery() {
-            const { data, error } = await supabase
+            const { data: capes, error } = await supabase
                 .from("capes")
-                .select("id,name,section,texture_path")
+                .select("id,name,section,texture_path,user_id,submitted_at")
                 .eq("status", "approved")
                 .order("submitted_at", { ascending: false });
 
-            if (error) {
-                console.error(error);
-                return;
+            if (error) { console.error(error); return; }
+
+            const userIds = [...new Set((capes || []).map(c => c.user_id))];
+            let usernames = {};
+            if (userIds.length > 0) {
+                const { data: profiles } = await supabase
+                    .from("profiles")
+                    .select("id,username")
+                    .in("id", userIds);
+                (profiles || []).forEach(p => { usernames[p.id] = p.username; });
             }
-            allCapes = data || [];
+
+            allCapes = (capes || []).map(c => ({ ...c, username: usernames[c.user_id] }));
             renderGallery();
         }
         loadGallery();
 
-        // ---------- Elements that depend on auth ----------
-        const authPanel = document.getElementById("authPanel");
-        const uploadPanel = document.getElementById("uploadPanel");
-        const usernameLabel = document.getElementById("usernameLabel");
-        const sectionEl = document.getElementById("section");
+        // ---------- Nav (logged out / logged in) ----------
+        function renderNavLoggedOut() {
+            navArea.innerHTML = `
+                <button class="linklike" id="navUpload">Upload Skin</button> |
+                <button class="linklike" id="navLogin">Login</button> |
+                <button class="linklike" id="navRegister">Register</button>
+            `;
+            document.getElementById("navUpload").addEventListener("click", openUploadSection);
+            document.getElementById("navLogin").addEventListener("click", () => { openUploadSection(); tabLogin.click(); });
+            document.getElementById("navRegister").addEventListener("click", () => { openUploadSection(); tabRegister.click(); });
+        }
+
+        function renderNavLoggedIn(username) {
+            navArea.innerHTML = `
+                <span class="plain">Hello, <strong style="color:#c4b5fd">${username}</strong></span> |
+                <button class="linklike" id="navUpload">Upload Skin</button> |
+                <button class="linklike" id="navLogout">Logout</button>
+            `;
+            document.getElementById("navUpload").addEventListener("click", openUploadSection);
+            document.getElementById("navLogout").addEventListener("click", async () => { await supabase.auth.signOut(); });
+        }
+
+        async function onSession(session) {
+            if (!session) {
+                renderNavLoggedOut();
+                uploadPanel.classList.add("hidden");
+                authPanel.classList.remove("hidden");
+                return;
+            }
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("username")
+                .eq("id", session.user.id)
+                .single();
+            const username = profile ? profile.username : session.user.email;
+            renderNavLoggedIn(username);
+            authPanel.classList.add("hidden");
+            uploadPanel.classList.remove("hidden");
+        }
+
+        supabase.auth.onAuthStateChange((_event, session) => onSession(session));
+        supabase.auth.getSession().then(({ data: { session } }) => onSession(session));
 
         // ---------- Register ----------
         document.getElementById("registerBtn").addEventListener("click", async () => {
@@ -365,60 +558,21 @@
             if (password.length < 6) return setMsg(authStatus, "Password must be at least 6 characters.", "err");
 
             setMsg(authStatus, "Creating account...", "");
-            const { error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: { data: { username } },
-            });
-
+            const { error } = await supabase.auth.signUp({ email, password, options: { data: { username } } });
             if (error) return setMsg(authStatus, "Error: " + error.message, "err");
-            setMsg(authStatus, "Account created! Check your email to confirm it (if required), then log in.", "ok");
+            setMsg(authStatus, "Account created! Check your email to confirm it, then log in.", "ok");
         });
 
         // ---------- Login ----------
         document.getElementById("loginBtn").addEventListener("click", async () => {
             const email = document.getElementById("loginEmail").value.trim();
             const password = document.getElementById("loginPassword").value;
-
             setMsg(authStatus, "Logging in...", "");
             const { error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) return setMsg(authStatus, "Error: " + error.message, "err");
         });
 
-        // ---------- Logout ----------
-        document.getElementById("logoutBtn").addEventListener("click", async () => {
-            await supabase.auth.signOut();
-        });
-
-        // ---------- Session state ----------
-        async function showUploadPanel(session) {
-            document.getElementById("uploadWrapper").classList.remove("hidden");
-            authPanel.classList.add("hidden");
-            uploadPanel.classList.remove("hidden");
-
-            const { data: profile } = await supabase
-                .from("profiles")
-                .select("username")
-                .eq("id", session.user.id)
-                .single();
-
-            usernameLabel.textContent = profile ? profile.username : session.user.email;
-        }
-
-        function showAuthPanel() {
-            uploadPanel.classList.add("hidden");
-            authPanel.classList.remove("hidden");
-        }
-
-        supabase.auth.onAuthStateChange((event, session) => {
-            if (session) showUploadPanel(session); else showAuthPanel();
-        });
-
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session) showUploadPanel(session);
-        });
-
-        // ---------- Submit ----------
+        // ---------- Submit cape ----------
         submitBtn.addEventListener("click", async () => {
             if (!selectedFile) return;
             submitBtn.disabled = true;
@@ -436,15 +590,13 @@
                     .upload(path, selectedFile, { contentType: "image/png" });
                 if (uploadError) throw uploadError;
 
-                const { error: insertError } = await supabase
-                    .from("capes")
-                    .insert({
-                        user_id: user.id,
-                        name: nameEl.value.trim(),
-                        section: sectionEl.value,
-                        status: "pending",
-                        texture_path: path,
-                    });
+                const { error: insertError } = await supabase.from("capes").insert({
+                    user_id: user.id,
+                    name: nameEl.value.trim(),
+                    section: sectionSelect.value,
+                    status: "pending",
+                    texture_path: path,
+                });
                 if (insertError) throw insertError;
 
                 setMsg(statusEl, "Done! Your cape is now pending review. 🎉", "ok");
@@ -456,11 +608,12 @@
                 console.error(err);
                 setMsg(statusEl, "Something went wrong: " + (err.message || err), "err");
             } finally {
-                updateButtonState();
+                updateSubmitState();
             }
         });
     } catch (err) {
-        console.error("[capes_mtg web] Supabase failed to initialize:", err);
+        console.error("[capes_mtg web] Supabase init failed:", err);
+        document.getElementById("navArea").innerHTML = `<span class="plain">(offline mode — could not reach the backend)</span>`;
     }
 </script>
 </body>
