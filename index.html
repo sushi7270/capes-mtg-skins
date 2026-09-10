@@ -736,21 +736,45 @@ footer a:hover { color: #86efac; }
                 const dd = document.createElement("div");
                 dd.className = "notif-dropdown";
                 dd.id = "notifDropdown";
+                dd.addEventListener("click", (ev) => ev.stopPropagation());
                 dd.innerHTML = notifications.length === 0
                     ? `<div class="notif-empty">No notifications yet.</div>`
-                    : notifications.map(n => `
+                    : notifications.map(n => {
+                        const canAct = n.type === "new_cape" && n.cape_id && MOD_ROLES.includes(currentRole);
+                        return `
                         <div class="notif-item ${n.read ? "" : "unread"}">
                             ${n.message}
                             <div class="notif-time">${timeAgo(n.created_at)}</div>
-                        </div>`).join("");
+                            ${canAct ? `
+                                <div class="mod-actions" style="margin-top:6px;">
+                                    <button class="mod-approve" data-notif-cape="${n.cape_id}" data-notif-action="approved">Approve</button>
+                                    <button class="mod-reject" data-notif-cape="${n.cape_id}" data-notif-action="rejected">Reject</button>
+                                </div>` : ""}
+                        </div>`;
+                    }).join("");
                 wrap.appendChild(dd);
+
+                dd.querySelectorAll("button[data-notif-action]").forEach(btn => {
+                    btn.addEventListener("click", async () => {
+                        btn.disabled = true;
+                        const { error } = await supabase
+                            .from("capes")
+                            .update({ status: btn.dataset.notifAction })
+                            .eq("id", btn.dataset.notifCape)
+                            .eq("status", "pending"); // por si otro mod ya la resolvió antes
+                        if (error) { console.error(error); btn.disabled = false; return; }
+                        const label = btn.dataset.notifAction === "approved" ? "Approved." : "Rejected.";
+                        const color = btn.dataset.notifAction === "approved" ? "#4ade80" : "#f87171";
+                        btn.closest(".mod-actions").innerHTML = `<span style="color:${color};font-size:12px;">${label}</span>`;
+                        loadGallery();
+                        if (!modWrapper.classList.contains("hidden")) loadModQueue();
+                    });
+                });
 
                 const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
                 if (unreadIds.length > 0) {
                     await supabase.from("notifications").update({ read: true }).in("id", unreadIds);
                     notifications = notifications.map(n => ({ ...n, read: true }));
-                    renderBell();
-                    document.getElementById("notifBellBtn").click();
                 }
             });
         }
@@ -763,7 +787,7 @@ footer a:hover { color: #86efac; }
         async function loadNotifications(userId) {
             const { data } = await supabase
                 .from("notifications")
-                .select("id,message,cape_id,read,created_at")
+                .select("id,message,cape_id,type,read,created_at")
                 .eq("user_id", userId)
                 .order("created_at", { ascending: false })
                 .limit(30);
