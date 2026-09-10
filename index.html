@@ -194,6 +194,50 @@ footer a:hover { color: #86efac; }
 .hidden { display: none !important; }
 .empty-msg { color: var(--muted); font-size: 15px; }
 
+/* Notification bell */
+.nav-bell-wrap { position: relative; display: inline-block; }
+.nav-bell {
+    background: none; border: none; color: var(--link-green); cursor: pointer;
+    font-size: 16px; font-family: 'Nunito', sans-serif; font-weight: 600; padding: 0; margin: 0 8px;
+}
+.nav-bell:hover { color: #86efac; }
+.bell-badge {
+    background: #f87171; color: #14101f; font-size: 10px; font-weight: 800;
+    border-radius: 999px; padding: 1px 5px; margin-left: 3px; vertical-align: top;
+}
+.notif-dropdown {
+    position: absolute; right: 0; top: 26px; width: 280px; max-height: 320px; overflow-y: auto;
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px; z-index: 20; text-align: left;
+}
+.notif-item {
+    padding: 8px; border-radius: 6px; font-size: 13px; color: var(--text);
+    border-bottom: 1px solid var(--border);
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item.unread { background: var(--bg-alt); }
+.notif-time { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.notif-empty { color: var(--muted); font-size: 13px; padding: 10px; text-align: center; }
+
+/* Moderation queue */
+.mod-actions { display: flex; gap: 8px; margin-top: 10px; }
+.mod-actions button {
+    flex: 1; padding: 8px; border: 1px solid var(--border); border-radius: 8px;
+    font-family: 'Nunito', sans-serif; font-weight: 700; cursor: pointer; font-size: 13px;
+}
+.mod-approve { background: #16a34a; color: #fff; border-color: #16a34a; }
+.mod-approve:hover { background: #22c55e; }
+.mod-reject { background: transparent; color: #f87171; border-color: #f87171; }
+.mod-reject:hover { background: #f8717122; }
+
+.like-btn {
+    margin-top: 8px; background: none; border: 1px solid var(--border); border-radius: 999px;
+    color: var(--muted); padding: 4px 10px; font-size: 13px; cursor: pointer;
+    font-family: 'Nunito', sans-serif; font-weight: 700;
+}
+.like-btn:hover { border-color: #f87171; color: #f87171; }
+.like-btn.liked { color: #f87171; border-color: #f87171; }
+
 @media (max-width: 768px) {
     body { font-size: 14px; }
     header h1 { font-size: 19px; }
@@ -251,18 +295,41 @@ footer a:hover { color: #86efac; }
             <div id="registerForm" class="hidden">
                 <label for="regUsername">Username</label>
                 <input type="text" id="regUsername" placeholder="e.g. cape_fan" maxlength="20">
+                <p class="hint" id="usernameCheckMsg"></p>
                 <label for="regEmail">Email (Gmail or any other)</label>
                 <input type="email" id="regEmail" placeholder="you@gmail.com">
                 <label for="regPassword">Password</label>
                 <input type="password" id="regPassword" placeholder="At least 6 characters">
                 <button class="primary" id="registerBtn">Create account</button>
-                <p class="hint">You'll get a confirmation email before you can log in (unless the admin disabled that).</p>
+                <p class="hint">We'll email you a 6-digit code to confirm your address.</p>
+            </div>
+
+            <!-- Paso de verificación con código (aparece después de registrarse) -->
+            <div id="verifyForm" class="hidden">
+                <label for="verifyCode">Verification code</label>
+                <input type="text" id="verifyCode" placeholder="123456" maxlength="6" inputmode="numeric">
+                <button class="primary" id="verifyBtn">Verify</button>
+                <p class="hint">Check your email (<span id="verifyEmailLabel"></span>) for the 6-digit code.</p>
             </div>
 
             <div id="authStatus"></div>
         </div>
 
         <div id="uploadPanel" class="hidden">
+            <!-- Cuenta / avatar -->
+            <div class="panel" style="margin-bottom: 16px;">
+                <label>Profile picture</label>
+                <div style="display:flex; align-items:center; gap: 12px;">
+                    <img id="accountAvatarPreview" src="" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--bg-alt);border:1px solid var(--border);">
+                    <div style="flex:1;">
+                        <input type="file" id="avatarFile" accept="image/png,image/jpeg" style="display:none">
+                        <button class="primary" id="avatarBtn" style="margin-top:0;">Change picture</button>
+                    </div>
+                </div>
+                <p class="hint">Click your username on any cape to see your public profile.</p>
+                <div id="avatarStatus"></div>
+            </div>
+
             <div class="panel">
                 <label for="capeName">Cape name</label>
                 <input type="text" id="capeName" placeholder="e.g. Dragon Cape" maxlength="60">
@@ -283,6 +350,44 @@ footer a:hover { color: #86efac; }
                 <button class="primary" id="submitBtn" disabled>Submit for review</button>
                 <div id="status"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- ============ PUBLIC PROFILE (shown when clicking a username) ============ -->
+    <div id="profileWrapper" class="hidden" style="margin-top: 40px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom: 14px;">
+            <img id="profileAvatar" src="" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;background:var(--bg-alt);border:1px solid var(--border);">
+            <h2 id="profileTitle" style="margin:0;border:none;">User's capes</h2>
+            <button class="linklike" id="profileBackBtn" style="margin-left:auto;color:var(--link-green);background:none;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;">← Back</button>
+        </div>
+        <ul class="skins-list" id="profileGallery"></ul>
+        <p id="profileEmpty" class="empty-msg hidden">This user hasn't had any capes approved yet.</p>
+    </div>
+
+    <!-- ============ MODERATION (only shown to moderators) ============ -->
+    <div id="modWrapper" class="hidden" style="margin-top: 40px;">
+        <h2>Moderation</h2>
+
+        <div class="panel" id="modAssignPanel" style="max-width: 280px; margin: 0 0 20px;">
+            <label for="modUsername">Set role (by username)</label>
+            <input type="text" id="modUsername" placeholder="username">
+            <select id="modRoleSelect" style="margin-top: 10px;">
+                <option value="user">User (remove role)</option>
+                <option value="mod_small">Small moderator</option>
+                <option value="mod_medium">Medium moderator</option>
+                <option value="mod_trusted">Trusted moderator</option>
+            </select>
+            <button class="primary" id="modAddBtn">Apply</button>
+            <div id="modAddStatus"></div>
+        </div>
+
+        <h2 style="font-size: 15px;">Pending review</h2>
+        <p id="modEmpty" class="empty-msg hidden">No pending capes right now.</p>
+        <ul class="skins-list" id="modQueue"></ul>
+
+        <div id="modApprovedSection" class="hidden" style="margin-top: 30px;">
+            <h2 style="font-size: 15px;">Approved capes (takedown)</h2>
+            <ul class="skins-list" id="modApprovedQueue"></ul>
         </div>
     </div>
 </main>
@@ -350,10 +455,15 @@ footer a:hover { color: #86efac; }
 
         galleryEl.innerHTML = pageItems.map(cape => {
             const initial = (cape.username || "?").charAt(0).toUpperCase();
+            const liked = !!cape.likedByMe;
+            const likeCount = cape.likeCount || 0;
+            const avatarHtml = cape.avatar_url
+                ? `<img class="avatar-fallback" src="${cape.avatar_url}" alt="" style="object-fit:cover;">`
+                : `<div class="avatar-fallback">${initial}</div>`;
             return `
             <li class="skin-item">
-                <div class="author-info">
-                    <div class="avatar-fallback">${initial}</div>
+                <div class="author-info" style="cursor:pointer;" onclick="handleUsernameClick('${cape.user_id}')">
+                    ${avatarHtml}
                     <strong>${cape.username || "unknown"}</strong>
                 </div>
                 <div class="skin-section-tag">${cape.section}</div>
@@ -361,6 +471,9 @@ footer a:hover { color: #86efac; }
                     <img src="${publicTextureUrl(cape.texture_path)}" alt="${cape.name}">
                 </div>
                 <div class="skin-name">${cape.name}</div>
+                <button class="like-btn ${liked ? "liked" : ""}" onclick="handleLikeToggle('${cape.id}', this)">
+                    ${liked ? "♥" : "♡"} <span class="like-count">${likeCount}</span>
+                </button>
             </li>`;
         }).join("");
 
@@ -416,6 +529,7 @@ footer a:hover { color: #86efac; }
         tabRegister.classList.remove("active");
         loginForm.classList.remove("hidden");
         registerForm.classList.add("hidden");
+        document.getElementById("verifyForm").classList.add("hidden");
         setMsg(authStatus, "", "");
     });
     tabRegister.addEventListener("click", () => {
@@ -423,6 +537,7 @@ footer a:hover { color: #86efac; }
         tabLogin.classList.remove("active");
         registerForm.classList.remove("hidden");
         loginForm.classList.add("hidden");
+        document.getElementById("verifyForm").classList.add("hidden");
         setMsg(authStatus, "", "");
     });
 
@@ -478,9 +593,20 @@ footer a:hover { color: #86efac; }
         const navArea = document.getElementById("navArea");
         const authPanel = document.getElementById("authPanel");
         const uploadPanel = document.getElementById("uploadPanel");
+        const verifyForm = document.getElementById("verifyForm");
+        const registerForm2 = document.getElementById("registerForm");
+        const loginForm2 = document.getElementById("loginForm");
         const sectionSelect = document.getElementById("capeSection");
+        const modWrapper = document.getElementById("modWrapper");
+        const profileWrapper = document.getElementById("profileWrapper");
+        let pendingVerifyEmail = null;
+        let currentUserId = null;
+        let currentRole = "user";
+        const MOD_ROLES = ["mod_small", "mod_medium", "mod_trusted", "owner"];
+        const DELETE_ROLES = ["mod_medium", "mod_trusted", "owner"];
+        const ASSIGN_ROLES = ["mod_trusted", "owner"];
 
-        // ---------- Load gallery (joins username via a view-less two-step) ----------
+        // ---------- Load gallery (joins username/avatar + like data) ----------
         async function loadGallery() {
             const { data: capes, error } = await supabase
                 .from("capes")
@@ -491,19 +617,159 @@ footer a:hover { color: #86efac; }
             if (error) { console.error(error); return; }
 
             const userIds = [...new Set((capes || []).map(c => c.user_id))];
-            let usernames = {};
+            let profilesById = {};
             if (userIds.length > 0) {
                 const { data: profiles } = await supabase
                     .from("profiles")
-                    .select("id,username")
+                    .select("id,username,avatar_url")
                     .in("id", userIds);
-                (profiles || []).forEach(p => { usernames[p.id] = p.username; });
+                (profiles || []).forEach(p => { profilesById[p.id] = p; });
             }
 
-            allCapes = (capes || []).map(c => ({ ...c, username: usernames[c.user_id] }));
+            const capeIds = (capes || []).map(c => c.id);
+            let likeCounts = {};
+            let likedByMeSet = new Set();
+            if (capeIds.length > 0) {
+                const { data: likeRows } = await supabase.from("likes").select("cape_id,user_id").in("cape_id", capeIds);
+                (likeRows || []).forEach(l => {
+                    likeCounts[l.cape_id] = (likeCounts[l.cape_id] || 0) + 1;
+                    if (currentUserId && l.user_id === currentUserId) likedByMeSet.add(l.cape_id);
+                });
+            }
+
+            allCapes = (capes || []).map(c => ({
+                ...c,
+                username: profilesById[c.user_id] ? profilesById[c.user_id].username : undefined,
+                avatar_url: profilesById[c.user_id] ? profilesById[c.user_id].avatar_url : undefined,
+                likeCount: likeCounts[c.id] || 0,
+                likedByMe: likedByMeSet.has(c.id),
+            }));
             renderGallery();
         }
         loadGallery();
+
+        // ---------- Likes ----------
+        window.handleLikeToggle = async function (capeId, btnEl) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) { openUploadSection(); tabLogin.click(); return; }
+
+            const cape = allCapes.find(c => c.id === capeId);
+            if (!cape) return;
+
+            btnEl.disabled = true;
+            if (cape.likedByMe) {
+                const { error } = await supabase.from("likes").delete().eq("user_id", user.id).eq("cape_id", capeId);
+                if (!error) { cape.likedByMe = false; cape.likeCount = Math.max(0, cape.likeCount - 1); }
+            } else {
+                const { error } = await supabase.from("likes").insert({ user_id: user.id, cape_id: capeId });
+                if (!error) { cape.likedByMe = true; cape.likeCount += 1; }
+            }
+            btnEl.disabled = false;
+            renderGallery();
+        };
+
+        // ---------- Public profile ----------
+        window.handleUsernameClick = async function (userId) {
+            const { data: profile } = await supabase.from("profiles").select("username,avatar_url").eq("id", userId).single();
+            if (!profile) return;
+
+            document.getElementById("profileTitle").textContent = `${profile.username}'s capes`;
+            document.getElementById("profileAvatar").src = profile.avatar_url || "";
+            profileWrapper.classList.remove("hidden");
+            profileWrapper.scrollIntoView({ behavior: "smooth" });
+
+            const { data: capes } = await supabase
+                .from("capes")
+                .select("id,name,section,texture_path")
+                .eq("status", "approved")
+                .eq("user_id", userId)
+                .order("submitted_at", { ascending: false });
+
+            const galleryEl = document.getElementById("profileGallery");
+            const emptyEl = document.getElementById("profileEmpty");
+            if (!capes || capes.length === 0) {
+                galleryEl.innerHTML = "";
+                emptyEl.classList.remove("hidden");
+                return;
+            }
+            emptyEl.classList.add("hidden");
+            galleryEl.innerHTML = capes.map(c => `
+                <li class="skin-item">
+                    <div class="skin-section-tag">${c.section}</div>
+                    <div class="skin-image"><img src="${publicTextureUrl(c.texture_path)}" alt="${c.name}"></div>
+                    <div class="skin-name">${c.name}</div>
+                </li>
+            `).join("");
+        };
+
+        document.getElementById("profileBackBtn").addEventListener("click", () => {
+            profileWrapper.classList.add("hidden");
+        });
+
+        // ---------- Notification bell ----------
+        let notifications = [];
+
+        function timeAgo(dateStr) {
+            const s = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+            if (s < 60) return "just now";
+            if (s < 3600) return Math.floor(s / 60) + "m ago";
+            if (s < 86400) return Math.floor(s / 3600) + "h ago";
+            return Math.floor(s / 86400) + "d ago";
+        }
+
+        function renderBell() {
+            const unread = notifications.filter(n => !n.read).length;
+            const existing = document.getElementById("notifBellWrap");
+            if (existing) existing.remove();
+
+            const wrap = document.createElement("span");
+            wrap.className = "nav-bell-wrap";
+            wrap.id = "notifBellWrap";
+            wrap.innerHTML = `<button class="nav-bell" id="notifBellBtn">🔔${unread > 0 ? `<span class="bell-badge">${unread}</span>` : ""}</button>`;
+            navArea.prepend(wrap);
+
+            document.getElementById("notifBellBtn").addEventListener("click", async (e) => {
+                e.stopPropagation();
+                const already = document.getElementById("notifDropdown");
+                if (already) { already.remove(); return; }
+
+                const dd = document.createElement("div");
+                dd.className = "notif-dropdown";
+                dd.id = "notifDropdown";
+                dd.innerHTML = notifications.length === 0
+                    ? `<div class="notif-empty">No notifications yet.</div>`
+                    : notifications.map(n => `
+                        <div class="notif-item ${n.read ? "" : "unread"}">
+                            ${n.message}
+                            <div class="notif-time">${timeAgo(n.created_at)}</div>
+                        </div>`).join("");
+                wrap.appendChild(dd);
+
+                const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+                if (unreadIds.length > 0) {
+                    await supabase.from("notifications").update({ read: true }).in("id", unreadIds);
+                    notifications = notifications.map(n => ({ ...n, read: true }));
+                    renderBell();
+                    document.getElementById("notifBellBtn").click();
+                }
+            });
+        }
+
+        document.addEventListener("click", () => {
+            const dd = document.getElementById("notifDropdown");
+            if (dd) dd.remove();
+        });
+
+        async function loadNotifications(userId) {
+            const { data } = await supabase
+                .from("notifications")
+                .select("id,message,cape_id,read,created_at")
+                .eq("user_id", userId)
+                .order("created_at", { ascending: false })
+                .limit(30);
+            notifications = data || [];
+            renderBell();
+        }
 
         // ---------- Nav (logged out / logged in) ----------
         function renderNavLoggedOut() {
@@ -517,50 +783,116 @@ footer a:hover { color: #86efac; }
             document.getElementById("navRegister").addEventListener("click", () => { openUploadSection(); tabRegister.click(); });
         }
 
-        function renderNavLoggedIn(username) {
+        function renderNavLoggedIn(username, role) {
+            const isMod = MOD_ROLES.includes(role);
             navArea.innerHTML = `
                 <span class="plain">Hello, <strong style="color:#c4b5fd">${username}</strong></span> |
                 <button class="linklike" id="navUpload">Upload Skin</button> |
+                ${isMod ? `<button class="linklike" id="navMod">Moderation</button> |` : ""}
                 <button class="linklike" id="navLogout">Logout</button>
             `;
             document.getElementById("navUpload").addEventListener("click", openUploadSection);
             document.getElementById("navLogout").addEventListener("click", async () => { await supabase.auth.signOut(); });
+            if (isMod) {
+                document.getElementById("navMod").addEventListener("click", () => {
+                    modWrapper.classList.remove("hidden");
+                    modWrapper.scrollIntoView({ behavior: "smooth" });
+                    loadModQueue();
+                    if (DELETE_ROLES.includes(role)) loadModApprovedQueue();
+                    document.getElementById("modAssignPanel").style.display = ASSIGN_ROLES.includes(role) ? "" : "none";
+                    document.getElementById("modApprovedSection").classList.toggle("hidden", !DELETE_ROLES.includes(role));
+                });
+            }
         }
 
         async function onSession(session) {
             if (!session) {
+                currentUserId = null;
+                currentRole = "user";
                 renderNavLoggedOut();
                 uploadPanel.classList.add("hidden");
+                verifyForm.classList.add("hidden");
+                loginForm2.classList.remove("hidden");
                 authPanel.classList.remove("hidden");
+                modWrapper.classList.add("hidden");
+                loadGallery();
                 return;
             }
             const { data: profile } = await supabase
                 .from("profiles")
-                .select("username")
+                .select("username,role,avatar_url")
                 .eq("id", session.user.id)
                 .single();
             const username = profile ? profile.username : session.user.email;
-            renderNavLoggedIn(username);
+            currentUserId = session.user.id;
+            currentRole = profile ? profile.role : "user";
+            renderNavLoggedIn(username, currentRole);
             authPanel.classList.add("hidden");
             uploadPanel.classList.remove("hidden");
+            document.getElementById("accountAvatarPreview").src = (profile && profile.avatar_url) || "";
+            loadNotifications(session.user.id);
+            loadGallery();
         }
 
         supabase.auth.onAuthStateChange((_event, session) => onSession(session));
         supabase.auth.getSession().then(({ data: { session } }) => onSession(session));
 
-        // ---------- Register ----------
+        // ---------- Username availability check (live, while registering) ----------
+        let usernameCheckTimer = null;
+        let usernameAvailable = false;
+        document.getElementById("regUsername").addEventListener("input", (e) => {
+            const msgEl = document.getElementById("usernameCheckMsg");
+            const value = e.target.value.trim();
+            usernameAvailable = false;
+            clearTimeout(usernameCheckTimer);
+            if (value.length < 3) { setMsg(msgEl, "", ""); return; }
+
+            setMsg(msgEl, "Checking availability...", "");
+            usernameCheckTimer = setTimeout(async () => {
+                const { data } = await supabase.from("profiles").select("id").eq("username", value).maybeSingle();
+                if (data) {
+                    setMsg(msgEl, "That username is already taken.", "err");
+                } else {
+                    usernameAvailable = true;
+                    setMsg(msgEl, "Username available.", "ok");
+                }
+            }, 400);
+        });
+
+        // ---------- Register (step 1: create account) ----------
         document.getElementById("registerBtn").addEventListener("click", async () => {
             const username = document.getElementById("regUsername").value.trim();
             const email = document.getElementById("regEmail").value.trim();
             const password = document.getElementById("regPassword").value;
 
             if (username.length < 3) return setMsg(authStatus, "Username must be at least 3 characters.", "err");
+            if (!usernameAvailable) return setMsg(authStatus, "Please choose an available username first.", "err");
             if (password.length < 6) return setMsg(authStatus, "Password must be at least 6 characters.", "err");
 
             setMsg(authStatus, "Creating account...", "");
             const { error } = await supabase.auth.signUp({ email, password, options: { data: { username } } });
+            if (error) {
+                // Fallback por si dos personas se registran con el mismo username casi al mismo tiempo
+                const msg = error.message && error.message.includes("duplicate") ? "That username was just taken." : error.message;
+                return setMsg(authStatus, "Error: " + msg, "err");
+            }
+
+            pendingVerifyEmail = email;
+            document.getElementById("verifyEmailLabel").textContent = email;
+            registerForm2.classList.add("hidden");
+            verifyForm.classList.remove("hidden");
+            setMsg(authStatus, "Account created! Enter the code we emailed you.", "ok");
+        });
+
+        // ---------- Register (step 2: verify the emailed code) ----------
+        document.getElementById("verifyBtn").addEventListener("click", async () => {
+            const code = document.getElementById("verifyCode").value.trim();
+            if (!pendingVerifyEmail) return setMsg(authStatus, "Session expired, register again.", "err");
+            if (code.length < 6) return setMsg(authStatus, "Enter the 6-digit code.", "err");
+
+            setMsg(authStatus, "Verifying...", "");
+            const { error } = await supabase.auth.verifyOtp({ email: pendingVerifyEmail, token: code, type: "signup" });
             if (error) return setMsg(authStatus, "Error: " + error.message, "err");
-            setMsg(authStatus, "Account created! Check your email to confirm it, then log in.", "ok");
         });
 
         // ---------- Login ----------
@@ -570,6 +902,33 @@ footer a:hover { color: #86efac; }
             setMsg(authStatus, "Logging in...", "");
             const { error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) return setMsg(authStatus, "Error: " + error.message, "err");
+        });
+
+        // ---------- Avatar upload ----------
+        document.getElementById("avatarBtn").addEventListener("click", () => document.getElementById("avatarFile").click());
+        document.getElementById("avatarFile").addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            const statusEl2 = document.getElementById("avatarStatus");
+            if (!file) return;
+            if (!currentUserId) return setMsg(statusEl2, "Log in first.", "err");
+            if (file.size > 1.5 * 1024 * 1024) return setMsg(statusEl2, "Image too large (max 1.5MB).", "err");
+
+            setMsg(statusEl2, "Uploading...", "");
+            const ext = file.type === "image/png" ? "png" : "jpg";
+            const path = `${currentUserId}/avatar.${ext}`;
+
+            const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
+            if (upErr) return setMsg(statusEl2, "Error: " + upErr.message, "err");
+
+            const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+            const url = pub.publicUrl + "?t=" + Date.now();
+
+            const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", currentUserId);
+            if (dbErr) return setMsg(statusEl2, "Error: " + dbErr.message, "err");
+
+            document.getElementById("accountAvatarPreview").src = url;
+            setMsg(statusEl2, "Profile picture updated!", "ok");
+            loadGallery();
         });
 
         // ---------- Submit cape ----------
@@ -610,6 +969,117 @@ footer a:hover { color: #86efac; }
             } finally {
                 updateSubmitState();
             }
+        });
+
+        // ---------- Moderation: pending queue (approve/reject) ----------
+        async function loadModQueue() {
+            const { data: capes, error } = await supabase
+                .from("capes")
+                .select("id,name,section,texture_path,user_id,submitted_at")
+                .eq("status", "pending")
+                .order("submitted_at", { ascending: true });
+
+            const queueEl = document.getElementById("modQueue");
+            const emptyEl = document.getElementById("modEmpty");
+            if (error) { console.error(error); return; }
+
+            if (!capes || capes.length === 0) {
+                queueEl.innerHTML = "";
+                emptyEl.classList.remove("hidden");
+                return;
+            }
+            emptyEl.classList.add("hidden");
+
+            const userIds = [...new Set(capes.map(c => c.user_id))];
+            const { data: profiles } = await supabase.from("profiles").select("id,username").in("id", userIds);
+            const usernames = {};
+            (profiles || []).forEach(p => { usernames[p.id] = p.username; });
+
+            queueEl.innerHTML = capes.map(c => `
+                <li class="skin-item">
+                    <div class="author-info">
+                        <div class="avatar-fallback">${(usernames[c.user_id] || "?").charAt(0).toUpperCase()}</div>
+                        <strong>${usernames[c.user_id] || "unknown"}</strong>
+                    </div>
+                    <div class="skin-section-tag">${c.section}</div>
+                    <div class="skin-image"><img src="${publicTextureUrl(c.texture_path)}" alt="${c.name}"></div>
+                    <div class="skin-name">${c.name}</div>
+                    <div class="mod-actions">
+                        <button class="mod-approve" data-id="${c.id}" data-action="approved">Approve</button>
+                        <button class="mod-reject" data-id="${c.id}" data-action="rejected">Reject</button>
+                    </div>
+                </li>
+            `).join("");
+
+            queueEl.querySelectorAll("button[data-action]").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    btn.disabled = true;
+                    const { error } = await supabase.from("capes").update({ status: btn.dataset.action }).eq("id", btn.dataset.id);
+                    if (error) { console.error(error); btn.disabled = false; return; }
+                    loadModQueue();
+                    loadGallery();
+                });
+            });
+        }
+
+        // ---------- Moderation: approved capes (takedown, medium+ only) ----------
+        async function loadModApprovedQueue() {
+            const { data: capes, error } = await supabase
+                .from("capes")
+                .select("id,name,section,texture_path,user_id")
+                .eq("status", "approved")
+                .order("submitted_at", { ascending: false });
+
+            const queueEl = document.getElementById("modApprovedQueue");
+            if (error || !capes) { console.error(error); return; }
+
+            const userIds = [...new Set(capes.map(c => c.user_id))];
+            const { data: profiles } = await supabase.from("profiles").select("id,username").in("id", userIds);
+            const usernames = {};
+            (profiles || []).forEach(p => { usernames[p.id] = p.username; });
+
+            queueEl.innerHTML = capes.map(c => `
+                <li class="skin-item">
+                    <div class="author-info">
+                        <div class="avatar-fallback">${(usernames[c.user_id] || "?").charAt(0).toUpperCase()}</div>
+                        <strong>${usernames[c.user_id] || "unknown"}</strong>
+                    </div>
+                    <div class="skin-section-tag">${c.section}</div>
+                    <div class="skin-image"><img src="${publicTextureUrl(c.texture_path)}" alt="${c.name}"></div>
+                    <div class="skin-name">${c.name}</div>
+                    <div class="mod-actions">
+                        <button class="mod-reject" data-id="${c.id}" style="flex:none;width:100%;">Remove</button>
+                    </div>
+                </li>
+            `).join("");
+
+            queueEl.querySelectorAll("button[data-id]").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    if (!confirm("Remove this cape permanently?")) return;
+                    btn.disabled = true;
+                    const { error } = await supabase.from("capes").delete().eq("id", btn.dataset.id);
+                    if (error) { console.error(error); btn.disabled = false; return; }
+                    loadModApprovedQueue();
+                    loadGallery();
+                });
+            });
+        }
+
+        // ---------- Assign role (trusted/owner only) ----------
+        document.getElementById("modAddBtn").addEventListener("click", async () => {
+            const el = document.getElementById("modAddStatus");
+            const username = document.getElementById("modUsername").value.trim();
+            const targetRole = document.getElementById("modRoleSelect").value;
+            if (!username) return setMsg(el, "Enter a username.", "err");
+
+            setMsg(el, "Looking up user...", "");
+            const { data: target, error: findError } = await supabase.from("profiles").select("id").eq("username", username).single();
+            if (findError || !target) return setMsg(el, "User not found.", "err");
+
+            const { error: updateError } = await supabase.from("profiles").update({ role: targetRole }).eq("id", target.id);
+            if (updateError) return setMsg(el, "Error: " + updateError.message, "err");
+            setMsg(el, `${username} is now: ${targetRole}.`, "ok");
+            document.getElementById("modUsername").value = "";
         });
     } catch (err) {
         console.error("[capes_mtg web] Supabase init failed:", err);
