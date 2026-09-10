@@ -784,15 +784,36 @@ footer a:hover { color: #86efac; }
             if (dd) dd.remove();
         });
 
+        let notifPollTimer = null;
+
         async function loadNotifications(userId) {
-            const { data } = await supabase
+            let { data, error } = await supabase
                 .from("notifications")
                 .select("id,message,cape_id,type,read,created_at")
                 .eq("user_id", userId)
                 .order("created_at", { ascending: false })
                 .limit(30);
+
+            if (error) {
+                console.error("[capes_mtg] notifications query failed, retrying without 'type' column:", error);
+                // Fallback por si la migración de la columna 'type' todavía no corrió en tu base
+                const fallback = await supabase
+                    .from("notifications")
+                    .select("id,message,cape_id,read,created_at")
+                    .eq("user_id", userId)
+                    .order("created_at", { ascending: false })
+                    .limit(30);
+                data = fallback.data;
+                if (fallback.error) console.error("[capes_mtg] notifications fallback also failed:", fallback.error);
+            }
+
             notifications = data || [];
             renderBell();
+
+            // Actualización automática: si algo nuevo llega mientras tenés la
+            // página abierta, la campana lo muestra sin que tengas que recargar.
+            clearInterval(notifPollTimer);
+            notifPollTimer = setInterval(() => loadNotifications(userId), 15000);
         }
 
         // ---------- Nav (logged out / logged in) ----------
@@ -833,6 +854,8 @@ footer a:hover { color: #86efac; }
             if (!session) {
                 currentUserId = null;
                 currentRole = "user";
+                clearInterval(notifPollTimer);
+                notifications = [];
                 renderNavLoggedOut();
                 uploadPanel.classList.add("hidden");
                 verifyForm.classList.add("hidden");
