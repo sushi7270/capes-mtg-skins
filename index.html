@@ -196,9 +196,11 @@ footer a:hover { color: #86efac; }
 
 /* Notification bell */
 .nav-bell-wrap { position: relative; display: inline-block; }
+.nav-account-wrap { position: relative; display: inline-block; }
 .nav-bell {
     background: none; border: none; color: var(--link-green); cursor: pointer;
     font-size: 16px; font-family: 'Nunito', sans-serif; font-weight: 600; padding: 0; margin: 0 8px;
+    display: inline-flex; align-items: center; gap: 2px; vertical-align: middle;
 }
 .nav-bell:hover { color: #86efac; }
 .bell-badge {
@@ -316,20 +318,6 @@ footer a:hover { color: #86efac; }
         </div>
 
         <div id="uploadPanel" class="hidden">
-            <!-- Cuenta / avatar -->
-            <div class="panel" style="margin-bottom: 16px;">
-                <label>Profile picture</label>
-                <div style="display:flex; align-items:center; gap: 12px;">
-                    <img id="accountAvatarPreview" src="" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--bg-alt);border:1px solid var(--border);">
-                    <div style="flex:1;">
-                        <input type="file" id="avatarFile" accept="image/png,image/jpeg" style="display:none">
-                        <button class="primary" id="avatarBtn" style="margin-top:0;">Change picture</button>
-                    </div>
-                </div>
-                <p class="hint">Click your username on any cape to see your public profile.</p>
-                <div id="avatarStatus"></div>
-            </div>
-
             <div class="panel">
                 <label for="capeName">Cape name</label>
                 <input type="text" id="capeName" placeholder="e.g. Dragon Cape" maxlength="60">
@@ -725,7 +713,7 @@ footer a:hover { color: #86efac; }
             const wrap = document.createElement("span");
             wrap.className = "nav-bell-wrap";
             wrap.id = "notifBellWrap";
-            wrap.innerHTML = `<button class="nav-bell" id="notifBellBtn">🔔${unread > 0 ? `<span class="bell-badge">${unread}</span>` : ""}</button>`;
+            wrap.innerHTML = `<button class="nav-bell" id="notifBellBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>${unread > 0 ? `<span class="bell-badge">${unread}</span>` : ""}</button>`;
             navArea.prepend(wrap);
 
             document.getElementById("notifBellBtn").addEventListener("click", async (e) => {
@@ -782,6 +770,8 @@ footer a:hover { color: #86efac; }
         document.addEventListener("click", () => {
             const dd = document.getElementById("notifDropdown");
             if (dd) dd.remove();
+            const ad = document.getElementById("accountDropdown");
+            if (ad) ad.remove();
         });
 
         let notifPollTimer = null;
@@ -828,14 +818,72 @@ footer a:hover { color: #86efac; }
             document.getElementById("navRegister").addEventListener("click", () => { openUploadSection(); tabRegister.click(); });
         }
 
+        let currentAvatarUrl = null;
+
+        async function handleAvatarChange(e) {
+            const file = e.target.files[0];
+            const statusEl2 = document.getElementById("avatarStatus");
+            if (!file) return;
+            if (!currentUserId) return setMsg(statusEl2, "Log in first.", "err");
+            if (file.size > 1.5 * 1024 * 1024) return setMsg(statusEl2, "Image too large (max 1.5MB).", "err");
+
+            setMsg(statusEl2, "Uploading...", "");
+            const ext = file.type === "image/png" ? "png" : "jpg";
+            const path = `${currentUserId}/avatar.${ext}`;
+
+            const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
+            if (upErr) return setMsg(statusEl2, "Error: " + upErr.message, "err");
+
+            const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+            const url = pub.publicUrl + "?t=" + Date.now();
+
+            const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", currentUserId);
+            if (dbErr) return setMsg(statusEl2, "Error: " + dbErr.message, "err");
+
+            currentAvatarUrl = url;
+            const previewEl2 = document.getElementById("accountAvatarPreview");
+            if (previewEl2) previewEl2.src = url;
+            setMsg(statusEl2, "Profile picture updated!", "ok");
+            loadGallery();
+        }
+
+        function renderAccountDropdown(wrap) {
+            const existing = document.getElementById("accountDropdown");
+            if (existing) { existing.remove(); return; }
+
+            const dd = document.createElement("div");
+            dd.className = "notif-dropdown";
+            dd.id = "accountDropdown";
+            dd.addEventListener("click", (ev) => ev.stopPropagation());
+            dd.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;padding:4px;">
+                    <img id="accountAvatarPreview" src="${currentAvatarUrl || ""}" alt=""
+                         style="width:48px;height:48px;border-radius:50%;object-fit:cover;background:var(--bg-alt);border:1px solid var(--border);">
+                    <button class="primary" id="avatarBtn" style="margin-top:0;padding:7px 10px;font-size:13px;">Change picture</button>
+                </div>
+                <input type="file" id="avatarFile" accept="image/png,image/jpeg" style="display:none">
+                <div id="avatarStatus" style="padding:6px 4px 0;"></div>
+            `;
+            wrap.appendChild(dd);
+
+            document.getElementById("avatarBtn").addEventListener("click", () => document.getElementById("avatarFile").click());
+            document.getElementById("avatarFile").addEventListener("change", handleAvatarChange);
+        }
+
         function renderNavLoggedIn(username, role) {
             const isMod = MOD_ROLES.includes(role);
             navArea.innerHTML = `
-                <span class="plain">Hello, <strong style="color:#c4b5fd">${username}</strong></span> |
+                <span class="nav-account-wrap" id="navAccountWrap">
+                    <button class="linklike" id="navAccountBtn">${username}</button>
+                </span> |
                 <button class="linklike" id="navUpload">Upload Skin</button> |
                 ${isMod ? `<button class="linklike" id="navMod">Moderation</button> |` : ""}
                 <button class="linklike" id="navLogout">Logout</button>
             `;
+            document.getElementById("navAccountBtn").addEventListener("click", (e) => {
+                e.stopPropagation();
+                renderAccountDropdown(document.getElementById("navAccountWrap"));
+            });
             document.getElementById("navUpload").addEventListener("click", openUploadSection);
             document.getElementById("navLogout").addEventListener("click", async () => { await supabase.auth.signOut(); });
             if (isMod) {
@@ -854,6 +902,7 @@ footer a:hover { color: #86efac; }
             if (!session) {
                 currentUserId = null;
                 currentRole = "user";
+                currentAvatarUrl = null;
                 clearInterval(notifPollTimer);
                 notifications = [];
                 renderNavLoggedOut();
@@ -873,16 +922,15 @@ footer a:hover { color: #86efac; }
             const username = profile ? profile.username : session.user.email;
             currentUserId = session.user.id;
             currentRole = profile ? profile.role : "user";
+            currentAvatarUrl = (profile && profile.avatar_url) || null;
             renderNavLoggedIn(username, currentRole);
             authPanel.classList.add("hidden");
             uploadPanel.classList.remove("hidden");
-            document.getElementById("accountAvatarPreview").src = (profile && profile.avatar_url) || "";
             loadNotifications(session.user.id);
             loadGallery();
         }
 
         supabase.auth.onAuthStateChange((_event, session) => onSession(session));
-        supabase.auth.getSession().then(({ data: { session } }) => onSession(session));
 
         // ---------- Username availability check (live, while registering) ----------
         let usernameCheckTimer = null;
@@ -951,33 +999,6 @@ footer a:hover { color: #86efac; }
             if (error) return setMsg(authStatus, "Error: " + error.message, "err");
         });
 
-        // ---------- Avatar upload ----------
-        document.getElementById("avatarBtn").addEventListener("click", () => document.getElementById("avatarFile").click());
-        document.getElementById("avatarFile").addEventListener("change", async (e) => {
-            const file = e.target.files[0];
-            const statusEl2 = document.getElementById("avatarStatus");
-            if (!file) return;
-            if (!currentUserId) return setMsg(statusEl2, "Log in first.", "err");
-            if (file.size > 1.5 * 1024 * 1024) return setMsg(statusEl2, "Image too large (max 1.5MB).", "err");
-
-            setMsg(statusEl2, "Uploading...", "");
-            const ext = file.type === "image/png" ? "png" : "jpg";
-            const path = `${currentUserId}/avatar.${ext}`;
-
-            const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, contentType: file.type });
-            if (upErr) return setMsg(statusEl2, "Error: " + upErr.message, "err");
-
-            const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-            const url = pub.publicUrl + "?t=" + Date.now();
-
-            const { error: dbErr } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", currentUserId);
-            if (dbErr) return setMsg(statusEl2, "Error: " + dbErr.message, "err");
-
-            document.getElementById("accountAvatarPreview").src = url;
-            setMsg(statusEl2, "Profile picture updated!", "ok");
-            loadGallery();
-        });
-
         // ---------- Submit cape ----------
         submitBtn.addEventListener("click", async () => {
             if (!selectedFile) return;
@@ -1005,7 +1026,7 @@ footer a:hover { color: #86efac; }
                 });
                 if (insertError) throw insertError;
 
-                setMsg(statusEl, "Done! Your cape is now pending review. 🎉", "ok");
+                setMsg(statusEl, "Done! Your cape is now pending review.", "ok");
                 selectedFile = null;
                 previewEl.style.display = "none";
                 nameEl.value = "";
